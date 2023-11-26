@@ -1,0 +1,8 @@
+syntax = "proto3";
+option go_package = "gitlab.fhnw.ch/cloud/mse-cloud/cisin/cisinapi";
+
+message Connection {
+  string query = 1;
+  int32 page_number = 2;
+  int32 results_per_page = 3;
+}
