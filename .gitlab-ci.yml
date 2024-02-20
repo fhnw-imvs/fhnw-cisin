@@ -1,0 +1,60 @@
+stages:
+  - test
+  - build-artifacts
+  - build-image
+
+variables:
+  GO_IMAGE: docker.io/library/golang:1.22-alpine3.19
+
+test:
+  stage: test
+  tags:
+    - fhnw
+  image: ${GO_IMAGE}
+  allow_failure: true
+  variables:
+    LINT_VERSION: v1.54.2
+  script:
+    - wget -O- -nv https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s ${LINT_VERSION}
+    - ./bin/golangci-lint run --timeout 5m || exit 1
+    - go test || exit 1
+
+build-artifacts:
+  stage: build-artifacts
+  tags:
+    - fhnw
+  image: ${GO_IMAGE}
+  script:
+    - go build -o out/${CI_PROJECT_NAME}
+  artifacts:
+    paths:
+      - out/${CI_PROJECT_NAME}
+
+.build-image:
+  stage: build-image
+  tags:
+    - fhnw
+  image: docker.io/library/docker:24.0.6-alpine3.18
+  services:
+    - name: docker.io/library/docker:24.0.6-dind-alpine3.18
+      alias: docker
+  variables:
+    IMAGE_TAG: cr.gitlab.fhnw.ch/cloud/mse-cloud/${CI_PROJECT_NAME}:${CI_PIPELINE_ID}-${PLATFORM}
+    PLATFORM: amd64
+  script:
+    - docker login -u $CI_REGISTRY_USER -p $CI_JOB_TOKEN cr.gitlab.fhnw.ch
+    - docker build --platform linux/${PLATFORM} -t $IMAGE_TAG -f package/Dockerfile .
+    - docker push $IMAGE_TAG
+
+build-image-amd64:
+  extends:
+    - .build-image
+  variables:
+    PLATFORM: amd64
+
+build-image-arm64:
+  extends:
+    - .build-image
+  variables:
+    PLATFORM: arm64
+
