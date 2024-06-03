@@ -1,9 +1,11 @@
 package ifacesrepository
 
 import (
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
+	"fmt"
 	"net"
 	"strings"
+
+	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
 )
 
 type ifacesNet struct {
@@ -13,7 +15,7 @@ type ifacesNet struct {
 func NewIfacesNet() (Ifaces, error) {
 	ifaces, err := net.Interfaces()
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("listing interfaces: %w", err)
 	}
 
 	ipAddresses := make([]string, 0)
@@ -21,7 +23,7 @@ func NewIfacesNet() (Ifaces, error) {
 	for _, iface := range ifaces {
 		addresses, err := iface.Addrs()
 		if err != nil {
-			return nil, err
+			return nil, fmt.Errorf("list interface addresses: %w", err)
 		}
 
 		for _, addr := range addresses {
@@ -41,7 +43,7 @@ func (i ifacesNet) GetIPAddresses() ([]string, error) {
 func (i ifacesNet) LookupAddr(ip string) (string, error) {
 	names, err := net.LookupAddr(ip)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("lookup ip %s: %w", ip, err)
 	}
 
 	if len(names) > 0 {

@@ -1,0 +1,27 @@
+linters:
+  enable-all: true
+  disable:
+    - deadcode
+    - maligned
+    - golint
+    - structcheck
+    - varcheck
+    - interfacer
+    - nosnakecase
+    - scopelint
+    - ifshort
+    - exhaustivestruct
+    - exhaustruct
+    - ireturn
+    - depguard
+    - lll
+    - nonamedreturns
+    - forcetypeassert
+    - varnamelen
+    - tagliatelle
+    - perfsprint
+    - noctx
+    - forbidigo
+
+run:
+  tests: false

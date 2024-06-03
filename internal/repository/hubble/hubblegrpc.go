@@ -2,6 +2,8 @@ package hubblerepostiory
 
 import (
 	"context"
+	"fmt"
+
 	"github.com/cilium/cilium/api/v1/observer"
 	"google.golang.org/grpc"
 	"google.golang.org/grpc/codes"
@@ -16,7 +18,7 @@ type hubbleGRPC struct {
 func NewGRPC(ctx context.Context, address string, dialOptions []grpc.DialOption) (Hubble, error) {
 	hubbleConn, err := grpc.Dial(address, dialOptions...)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create hubble connection: %w", err)
 	}
 
 	flowClient, err := getFlowClient(ctx, hubbleConn)
@@ -25,6 +27,7 @@ func NewGRPC(ctx context.Context, address string, dialOptions []grpc.DialOption)
 	}
 
 	return hubbleGRPC{
+		hubbleConn: hubbleConn,
 		flowClient: flowClient,
 	}, nil
 }
@@ -36,7 +39,7 @@ func getFlowClient(ctx context.Context, clientConn *grpc.ClientConn) (observer.O
 		Follow: true,
 	})
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("get flows: %w", err)
 	}
 
 	return flowClient, nil
@@ -69,6 +72,7 @@ func (h hubbleGRPC) StartFlowChannel(ctx context.Context) (chan *Flow, chan erro
 
 	go func() {
 		<-ctx.Done()
+
 		_ = h.hubbleConn.Close()
 	}()
 

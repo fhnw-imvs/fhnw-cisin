@@ -1,9 +1,11 @@
 package procrepository
 
 import (
+	"fmt"
+	"strconv"
+
 	"github.com/prometheus/procfs"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
-	"strconv"
 )
 
 type procFS struct {
@@ -11,25 +13,25 @@ type procFS struct {
 }
 
 func NewProcFS() (Proc, error) {
-	fs, err := procfs.NewFS("/proc")
+	fileSystem, err := procfs.NewFS("/proc")
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create proc fs: %w", err)
 	}
 
 	return procFS{
-		fs: fs,
+		fs: fileSystem,
 	}, nil
 }
 
 func (p procFS) GetPIDFromPort(port int) (int, error) {
 	netTCP, err := p.fs.NetTCP()
 	if err != nil {
-		return -1, err
+		return -1, fmt.Errorf("read tcp: %w", err)
 	}
 
 	procs, err := p.fs.AllProcs()
 	if err != nil {
-		return -1, err
+		return -1, fmt.Errorf("list procs: %w", err)
 	}
 
 	for _, line := range netTCP {

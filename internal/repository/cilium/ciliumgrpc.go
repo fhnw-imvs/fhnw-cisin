@@ -1,6 +1,8 @@
 package ciliumrepository
 
 import (
+	"fmt"
+
 	"github.com/cilium/cilium/api/v1/models"
 	"github.com/cilium/cilium/pkg/client"
 )
@@ -10,20 +12,30 @@ type ciliumHTTP struct {
 }
 
 func NewHTTP(address string) (Cilium, error) {
-	c, err := client.NewClient(address)
+	ciliumClient, err := client.NewClient(address)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("create cilium client: %w", err)
 	}
 
 	return ciliumHTTP{
-		client: c,
+		client: ciliumClient,
 	}, nil
 }
 
 func (c ciliumHTTP) GetIdentity(id string) (*models.Endpoint, error) {
-	return c.client.EndpointGet(id)
+	endpoint, err := c.client.EndpointGet(id)
+	if err != nil {
+		return nil, fmt.Errorf("get endpoint: %w", err)
+	}
+
+	return endpoint, nil
 }
 
 func (c ciliumHTTP) ListIdentities() ([]*models.Endpoint, error) {
-	return c.client.EndpointList()
+	endpointList, err := c.client.EndpointList()
+	if err != nil {
+		return nil, fmt.Errorf("list endpotint: %w", err)
+	}
+
+	return endpointList, nil
 }

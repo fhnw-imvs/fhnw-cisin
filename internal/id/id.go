@@ -2,30 +2,74 @@ package id
 
 import (
 	"fmt"
+	"slices"
+	"strings"
+
 	"github.com/cilium/cilium/api/v1/flow"
+	"github.com/sirupsen/logrus"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/ifacesrepository"
+	ifacesrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/ifaces"
 )
 
-func GetK8sID(e *flow.Endpoint) (string, error) {
-	workloads := e.GetWorkloads()
+const numberOfIDElements = 3
 
-	if len(workloads) == 0 {
-		return "", constant.ErrNotFound
+// HostKind fake k8s type for a host.
+const HostKind = "Host"
+
+// HostNamespace fake k8s namespace for a host.
+const HostNamespace = "host"
+
+const (
+	ExternalWorkloadKind      = "Workload"
+	ExternalWorkloadNamespace = "external"
+)
+
+func GetK8sID(endpoint *flow.Endpoint) (string, error) {
+	workloads := endpoint.GetWorkloads()
+	if len(workloads) > 0 {
+		return getKubernetesWorkloadID(endpoint.GetNamespace(), workloads[0].GetKind(), workloads[0].GetName()), nil
 	}
 
-	return getKubernetesWorkloadID(workloads[0]), nil
+	logrus.WithField("endpoint", endpoint).Debug("no workload")
+
+	if len(endpoint.GetPodName()) > 0 {
+		return getKubernetesWorkloadID(endpoint.GetNamespace(), "Pod", endpoint.GetPodName()), nil
+	}
+
+	return "", fmt.Errorf("could not evaluate k8s id: %w", constant.ErrNotFound)
 }
 
-func getKubernetesWorkloadID(w *flow.Workload) string {
-	return fmt.Sprintf("%s/%s", w.GetKind(), w.GetName())
+func ParseID(id string) (namespace, kind, name string, err error) {
+	split := strings.Split(id, "/")
+	if len(split) != numberOfIDElements {
+		return "", "", "", fmt.Errorf("id %s is invalid: %w", id, constant.ErrInvalid)
+	}
+
+	return split[0], split[1], split[2], nil
 }
 
-func GetVmID(ip string, ifaces ifacesrepository.Ifaces) (string, error) {
+func getKubernetesWorkloadID(namespace, kind, name string) string {
+	return fmt.Sprintf("%s/%s/%s", namespace, kind, name)
+}
+
+func GetVMID(ip string, nodeName string, ifaces ifacesrepository.Ifaces) (string, error) {
+	ipAdresses, err := ifaces.GetIPAddresses()
+	if err != nil {
+		return "", fmt.Errorf("could not get host ip addresses: %w", err)
+	}
+
+	if slices.Contains(ipAdresses, ip) {
+		return fmt.Sprintf("%s/%s/%s", ExternalWorkloadNamespace, ExternalWorkloadKind, nodeName), nil
+	}
+
 	name, err := ifaces.LookupAddr(ip)
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("could not get name for ip address %s: %w", ip, err)
 	}
 
-	return name, nil
+	return fmt.Sprintf("%s/%s/%s", HostNamespace, HostKind, name), nil
+}
+
+func GetExternalWorkloadID(nodeName string) string {
+	return fmt.Sprintf("%s/%s/%s", ExternalWorkloadNamespace, ExternalWorkloadKind, nodeName)
 }

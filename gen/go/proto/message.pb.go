@@ -24,24 +24,21 @@ type WorkloadType int32
 
 const (
 	WorkloadType_KUBERNETES WorkloadType = 0
-	WorkloadType_DOCKER     WorkloadType = 1
-	WorkloadType_JAVA       WorkloadType = 2
-	WorkloadType_WORLD      WorkloadType = 3
+	WorkloadType_VM         WorkloadType = 1
+	WorkloadType_WORLD      WorkloadType = 2
 )
 
 // Enum value maps for WorkloadType.
 var (
 	WorkloadType_name = map[int32]string{
 		0: "KUBERNETES",
-		1: "DOCKER",
-		2: "JAVA",
-		3: "WORLD",
+		1: "VM",
+		2: "WORLD",
 	}
 	WorkloadType_value = map[string]int32{
 		"KUBERNETES": 0,
-		"DOCKER":     1,
-		"JAVA":       2,
-		"WORLD":      3,
+		"VM":         1,
+		"WORLD":      2,
 	}
 )
 
@@ -72,6 +69,124 @@ func (WorkloadType) EnumDescriptor() ([]byte, []int) {
 	return file_proto_message_proto_rawDescGZIP(), []int{0}
 }
 
+type Sbom struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Image  string `protobuf:"bytes,1,opt,name=image,proto3" json:"image,omitempty"`
+	Digest string `protobuf:"bytes,2,opt,name=digest,proto3" json:"digest,omitempty"`
+	Url    string `protobuf:"bytes,3,opt,name=url,proto3" json:"url,omitempty"`
+}
+
+func (x *Sbom) Reset() {
+	*x = Sbom{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_message_proto_msgTypes[0]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *Sbom) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*Sbom) ProtoMessage() {}
+
+func (x *Sbom) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[0]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use Sbom.ProtoReflect.Descriptor instead.
+func (*Sbom) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{0}
+}
+
+func (x *Sbom) GetImage() string {
+	if x != nil {
+		return x.Image
+	}
+	return ""
+}
+
+func (x *Sbom) GetDigest() string {
+	if x != nil {
+		return x.Digest
+	}
+	return ""
+}
+
+func (x *Sbom) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
+type SbomVM struct {
+	state         protoimpl.MessageState
+	sizeCache     protoimpl.SizeCache
+	unknownFields protoimpl.UnknownFields
+
+	Hostname string `protobuf:"bytes,1,opt,name=hostname,proto3" json:"hostname,omitempty"`
+	Url      string `protobuf:"bytes,2,opt,name=url,proto3" json:"url,omitempty"`
+}
+
+func (x *SbomVM) Reset() {
+	*x = SbomVM{}
+	if protoimpl.UnsafeEnabled {
+		mi := &file_proto_message_proto_msgTypes[1]
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		ms.StoreMessageInfo(mi)
+	}
+}
+
+func (x *SbomVM) String() string {
+	return protoimpl.X.MessageStringOf(x)
+}
+
+func (*SbomVM) ProtoMessage() {}
+
+func (x *SbomVM) ProtoReflect() protoreflect.Message {
+	mi := &file_proto_message_proto_msgTypes[1]
+	if protoimpl.UnsafeEnabled && x != nil {
+		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
+		if ms.LoadMessageInfo() == nil {
+			ms.StoreMessageInfo(mi)
+		}
+		return ms
+	}
+	return mi.MessageOf(x)
+}
+
+// Deprecated: Use SbomVM.ProtoReflect.Descriptor instead.
+func (*SbomVM) Descriptor() ([]byte, []int) {
+	return file_proto_message_proto_rawDescGZIP(), []int{1}
+}
+
+func (x *SbomVM) GetHostname() string {
+	if x != nil {
+		return x.Hostname
+	}
+	return ""
+}
+
+func (x *SbomVM) GetUrl() string {
+	if x != nil {
+		return x.Url
+	}
+	return ""
+}
+
 type Connection struct {
 	state         protoimpl.MessageState
 	sizeCache     protoimpl.SizeCache
@@ -84,7 +199,7 @@ type Connection struct {
 func (x *Connection) Reset() {
 	*x = Connection{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_message_proto_msgTypes[0]
+		mi := &file_proto_message_proto_msgTypes[2]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -97,7 +212,7 @@ func (x *Connection) String() string {
 func (*Connection) ProtoMessage() {}
 
 func (x *Connection) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_message_proto_msgTypes[0]
+	mi := &file_proto_message_proto_msgTypes[2]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -110,7 +225,7 @@ func (x *Connection) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Connection.ProtoReflect.Descriptor instead.
 func (*Connection) Descriptor() ([]byte, []int) {
-	return file_proto_message_proto_rawDescGZIP(), []int{0}
+	return file_proto_message_proto_rawDescGZIP(), []int{2}
 }
 
 func (x *Connection) GetSource() *Workload {
@@ -140,7 +255,7 @@ type Workload struct {
 func (x *Workload) Reset() {
 	*x = Workload{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_message_proto_msgTypes[1]
+		mi := &file_proto_message_proto_msgTypes[3]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -153,7 +268,7 @@ func (x *Workload) String() string {
 func (*Workload) ProtoMessage() {}
 
 func (x *Workload) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_message_proto_msgTypes[1]
+	mi := &file_proto_message_proto_msgTypes[3]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -166,7 +281,7 @@ func (x *Workload) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Workload.ProtoReflect.Descriptor instead.
 func (*Workload) Descriptor() ([]byte, []int) {
-	return file_proto_message_proto_rawDescGZIP(), []int{1}
+	return file_proto_message_proto_rawDescGZIP(), []int{3}
 }
 
 func (x *Workload) GetId() string {
@@ -201,7 +316,7 @@ type Analyse struct {
 func (x *Analyse) Reset() {
 	*x = Analyse{}
 	if protoimpl.UnsafeEnabled {
-		mi := &file_proto_message_proto_msgTypes[2]
+		mi := &file_proto_message_proto_msgTypes[4]
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		ms.StoreMessageInfo(mi)
 	}
@@ -214,7 +329,7 @@ func (x *Analyse) String() string {
 func (*Analyse) ProtoMessage() {}
 
 func (x *Analyse) ProtoReflect() protoreflect.Message {
-	mi := &file_proto_message_proto_msgTypes[2]
+	mi := &file_proto_message_proto_msgTypes[4]
 	if protoimpl.UnsafeEnabled && x != nil {
 		ms := protoimpl.X.MessageStateOf(protoimpl.Pointer(x))
 		if ms.LoadMessageInfo() == nil {
@@ -227,7 +342,7 @@ func (x *Analyse) ProtoReflect() protoreflect.Message {
 
 // Deprecated: Use Analyse.ProtoReflect.Descriptor instead.
 func (*Analyse) Descriptor() ([]byte, []int) {
-	return file_proto_message_proto_rawDescGZIP(), []int{2}
+	return file_proto_message_proto_rawDescGZIP(), []int{4}
 }
 
 func (x *Analyse) GetResults() []string {
@@ -241,7 +356,15 @@ var File_proto_message_proto protoreflect.FileDescriptor
 
 var file_proto_message_proto_rawDesc = []byte{
 	0x0a, 0x13, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x2f, 0x6d, 0x65, 0x73, 0x73, 0x61, 0x67, 0x65, 0x2e,
-	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x5c, 0x0a, 0x0a, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74,
+	0x70, 0x72, 0x6f, 0x74, 0x6f, 0x22, 0x46, 0x0a, 0x04, 0x53, 0x62, 0x6f, 0x6d, 0x12, 0x14, 0x0a,
+	0x05, 0x69, 0x6d, 0x61, 0x67, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x05, 0x69, 0x6d,
+	0x61, 0x67, 0x65, 0x12, 0x16, 0x0a, 0x06, 0x64, 0x69, 0x67, 0x65, 0x73, 0x74, 0x18, 0x02, 0x20,
+	0x01, 0x28, 0x09, 0x52, 0x06, 0x64, 0x69, 0x67, 0x65, 0x73, 0x74, 0x12, 0x10, 0x0a, 0x03, 0x75,
+	0x72, 0x6c, 0x18, 0x03, 0x20, 0x01, 0x28, 0x09, 0x52, 0x03, 0x75, 0x72, 0x6c, 0x22, 0x36, 0x0a,
+	0x06, 0x53, 0x62, 0x6f, 0x6d, 0x56, 0x4d, 0x12, 0x1a, 0x0a, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x6e,
+	0x61, 0x6d, 0x65, 0x18, 0x01, 0x20, 0x01, 0x28, 0x09, 0x52, 0x08, 0x68, 0x6f, 0x73, 0x74, 0x6e,
+	0x61, 0x6d, 0x65, 0x12, 0x10, 0x0a, 0x03, 0x75, 0x72, 0x6c, 0x18, 0x02, 0x20, 0x01, 0x28, 0x09,
+	0x52, 0x03, 0x75, 0x72, 0x6c, 0x22, 0x5c, 0x0a, 0x0a, 0x43, 0x6f, 0x6e, 0x6e, 0x65, 0x63, 0x74,
 	0x69, 0x6f, 0x6e, 0x12, 0x21, 0x0a, 0x06, 0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x18, 0x01, 0x20,
 	0x01, 0x28, 0x0b, 0x32, 0x09, 0x2e, 0x57, 0x6f, 0x72, 0x6b, 0x6c, 0x6f, 0x61, 0x64, 0x52, 0x06,
 	0x73, 0x6f, 0x75, 0x72, 0x63, 0x65, 0x12, 0x2b, 0x0a, 0x0b, 0x64, 0x65, 0x73, 0x74, 0x69, 0x6e,
@@ -261,14 +384,13 @@ var file_proto_message_proto_rawDesc = []byte{
 	0x52, 0x05, 0x76, 0x61, 0x6c, 0x75, 0x65, 0x3a, 0x02, 0x38, 0x01, 0x22, 0x23, 0x0a, 0x07, 0x41,
 	0x6e, 0x61, 0x6c, 0x79, 0x73, 0x65, 0x12, 0x18, 0x0a, 0x07, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74,
 	0x73, 0x18, 0x01, 0x20, 0x03, 0x28, 0x09, 0x52, 0x07, 0x72, 0x65, 0x73, 0x75, 0x6c, 0x74, 0x73,
-	0x2a, 0x3f, 0x0a, 0x0c, 0x57, 0x6f, 0x72, 0x6b, 0x6c, 0x6f, 0x61, 0x64, 0x54, 0x79, 0x70, 0x65,
+	0x2a, 0x31, 0x0a, 0x0c, 0x57, 0x6f, 0x72, 0x6b, 0x6c, 0x6f, 0x61, 0x64, 0x54, 0x79, 0x70, 0x65,
 	0x12, 0x0e, 0x0a, 0x0a, 0x4b, 0x55, 0x42, 0x45, 0x52, 0x4e, 0x45, 0x54, 0x45, 0x53, 0x10, 0x00,
-	0x12, 0x0a, 0x0a, 0x06, 0x44, 0x4f, 0x43, 0x4b, 0x45, 0x52, 0x10, 0x01, 0x12, 0x08, 0x0a, 0x04,
-	0x4a, 0x41, 0x56, 0x41, 0x10, 0x02, 0x12, 0x09, 0x0a, 0x05, 0x57, 0x4f, 0x52, 0x4c, 0x44, 0x10,
-	0x03, 0x42, 0x2f, 0x5a, 0x2d, 0x67, 0x69, 0x74, 0x6c, 0x61, 0x62, 0x2e, 0x66, 0x68, 0x6e, 0x77,
-	0x2e, 0x63, 0x68, 0x2f, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x2f, 0x6d, 0x73, 0x65, 0x2d, 0x63, 0x6c,
-	0x6f, 0x75, 0x64, 0x2f, 0x63, 0x69, 0x73, 0x69, 0x6e, 0x2f, 0x63, 0x69, 0x73, 0x69, 0x6e, 0x61,
-	0x70, 0x69, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
+	0x12, 0x06, 0x0a, 0x02, 0x56, 0x4d, 0x10, 0x01, 0x12, 0x09, 0x0a, 0x05, 0x57, 0x4f, 0x52, 0x4c,
+	0x44, 0x10, 0x02, 0x42, 0x2f, 0x5a, 0x2d, 0x67, 0x69, 0x74, 0x6c, 0x61, 0x62, 0x2e, 0x66, 0x68,
+	0x6e, 0x77, 0x2e, 0x63, 0x68, 0x2f, 0x63, 0x6c, 0x6f, 0x75, 0x64, 0x2f, 0x6d, 0x73, 0x65, 0x2d,
+	0x63, 0x6c, 0x6f, 0x75, 0x64, 0x2f, 0x63, 0x69, 0x73, 0x69, 0x6e, 0x2f, 0x63, 0x69, 0x73, 0x69,
+	0x6e, 0x61, 0x70, 0x69, 0x62, 0x06, 0x70, 0x72, 0x6f, 0x74, 0x6f, 0x33,
 }
 
 var (
@@ -284,20 +406,22 @@ func file_proto_message_proto_rawDescGZIP() []byte {
 }
 
 var file_proto_message_proto_enumTypes = make([]protoimpl.EnumInfo, 1)
-var file_proto_message_proto_msgTypes = make([]protoimpl.MessageInfo, 4)
+var file_proto_message_proto_msgTypes = make([]protoimpl.MessageInfo, 6)
 var file_proto_message_proto_goTypes = []interface{}{
 	(WorkloadType)(0),  // 0: WorkloadType
-	(*Connection)(nil), // 1: Connection
-	(*Workload)(nil),   // 2: Workload
-	(*Analyse)(nil),    // 3: Analyse
-	nil,                // 4: Workload.ResultsEntry
+	(*Sbom)(nil),       // 1: Sbom
+	(*SbomVM)(nil),     // 2: SbomVM
+	(*Connection)(nil), // 3: Connection
+	(*Workload)(nil),   // 4: Workload
+	(*Analyse)(nil),    // 5: Analyse
+	nil,                // 6: Workload.ResultsEntry
 }
 var file_proto_message_proto_depIdxs = []int32{
-	2, // 0: Connection.source:type_name -> Workload
-	2, // 1: Connection.destination:type_name -> Workload
+	4, // 0: Connection.source:type_name -> Workload
+	4, // 1: Connection.destination:type_name -> Workload
 	0, // 2: Workload.type:type_name -> WorkloadType
-	4, // 3: Workload.results:type_name -> Workload.ResultsEntry
-	3, // 4: Workload.ResultsEntry.value:type_name -> Analyse
+	6, // 3: Workload.results:type_name -> Workload.ResultsEntry
+	5, // 4: Workload.ResultsEntry.value:type_name -> Analyse
 	5, // [5:5] is the sub-list for method output_type
 	5, // [5:5] is the sub-list for method input_type
 	5, // [5:5] is the sub-list for extension type_name
@@ -312,7 +436,7 @@ func file_proto_message_proto_init() {
 	}
 	if !protoimpl.UnsafeEnabled {
 		file_proto_message_proto_msgTypes[0].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Connection); i {
+			switch v := v.(*Sbom); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -324,7 +448,7 @@ func file_proto_message_proto_init() {
 			}
 		}
 		file_proto_message_proto_msgTypes[1].Exporter = func(v interface{}, i int) interface{} {
-			switch v := v.(*Workload); i {
+			switch v := v.(*SbomVM); i {
 			case 0:
 				return &v.state
 			case 1:
@@ -336,6 +460,30 @@ func file_proto_message_proto_init() {
 			}
 		}
 		file_proto_message_proto_msgTypes[2].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Connection); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_message_proto_msgTypes[3].Exporter = func(v interface{}, i int) interface{} {
+			switch v := v.(*Workload); i {
+			case 0:
+				return &v.state
+			case 1:
+				return &v.sizeCache
+			case 2:
+				return &v.unknownFields
+			default:
+				return nil
+			}
+		}
+		file_proto_message_proto_msgTypes[4].Exporter = func(v interface{}, i int) interface{} {
 			switch v := v.(*Analyse); i {
 			case 0:
 				return &v.state
@@ -354,7 +502,7 @@ func file_proto_message_proto_init() {
 			GoPackagePath: reflect.TypeOf(x{}).PkgPath(),
 			RawDescriptor: file_proto_message_proto_rawDesc,
 			NumEnums:      1,
-			NumMessages:   4,
+			NumMessages:   6,
 			NumExtensions: 0,
 			NumServices:   0,
 		},

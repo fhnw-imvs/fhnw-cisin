@@ -3,9 +3,19 @@ option go_package = "gitlab.fhnw.ch/cloud/mse-cloud/cisin/cisinapi";
 
 enum WorkloadType {
   KUBERNETES = 0;
-  DOCKER = 1;
-  JAVA = 2;
-  WORLD = 3;
+  VM = 1;
+  WORLD = 2;
+}
+
+message Sbom {
+  string image = 1;
+  string digest = 2;
+  string url = 3;
+}
+
+message SbomVM {
+  string hostname = 1;
+  string url = 2;
 }
 
 message Connection {

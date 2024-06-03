@@ -1,10 +1,12 @@
 package safemap
 
-import "golang.org/x/sync/syncmap"
+import (
+	"golang.org/x/sync/syncmap"
+)
 
 type SafeMap[T, U any] interface {
-	Get(T) (U, bool)
-	Set(T, U)
+	Get(t T) (U, bool)
+	Set(t T, u U)
 	Keys() []T
 }
 
@@ -19,10 +21,15 @@ func NewSafeMap[T, U any]() SafeMap[T, U] {
 }
 
 func (s *safeMap[T, U]) Get(t T) (U, bool) {
+	//nolint:varnamelen
 	var u U
 
 	item, ok := s.safeMap.Load(t)
 	if !ok {
+		return u, false
+	}
+
+	if _, ok := item.(U); !ok {
 		return u, false
 	}
 
@@ -38,6 +45,7 @@ func (s *safeMap[T, U]) Keys() []T {
 
 	s.safeMap.Range(func(key, _ any) bool {
 		keys = append(keys, key.(T))
+
 		return true
 	})
 

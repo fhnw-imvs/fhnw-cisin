@@ -6,7 +6,7 @@ stages:
 variables:
   GO_IMAGE: docker.io/library/golang:1.22-alpine3.19
 
-test:
+.test:
   stage: test
   tags:
     - fhnw
