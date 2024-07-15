@@ -51,10 +51,3 @@ build-image-amd64:
     - .build-image
   variables:
     PLATFORM: amd64
-
-build-image-arm64:
-  extends:
-    - .build-image
-  variables:
-    PLATFORM: arm64
-

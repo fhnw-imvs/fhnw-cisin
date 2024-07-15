@@ -16,7 +16,7 @@ type hubbleGRPC struct {
 }
 
 func NewGRPC(ctx context.Context, address string, dialOptions []grpc.DialOption) (Hubble, error) {
-	hubbleConn, err := grpc.Dial(address, dialOptions...)
+	hubbleConn, err := grpc.NewClient(address, dialOptions...)
 	if err != nil {
 		return nil, fmt.Errorf("create hubble connection: %w", err)
 	}

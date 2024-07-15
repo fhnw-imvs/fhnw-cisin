@@ -13,7 +13,6 @@ import (
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/agentmodule"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/id"
-	ciliumrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/cilium"
 	hubblerepostiory "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/hubble"
 	ifacesrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/ifaces"
 	messagingrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/messaging"
@@ -30,7 +29,6 @@ type Opts struct {
 	NodeType                string
 	ConnectionSubject       string
 	HubbleRepo              hubblerepostiory.Hubble
-	CiliumRepo              ciliumrepository.Cilium
 	IfacesRepo              ifacesrepository.Ifaces
 	ConnectionMessagingRepo messagingrepository.Messaging[cisinapi.Connection, *cisinapi.Connection]
 	SrcAgentModules         []agentmodule.AgentModule
@@ -80,7 +78,11 @@ func (a agent) startHubble(ctx context.Context) {
 			select {
 			case <-ctx.Done():
 			case receivedFlow := <-flowChan:
-				logger.WithField("nodeName", receivedFlow.NodeName).Tracef("hubble message")
+				logger.WithFields(logrus.Fields{
+					"id":       receivedFlow.Flow.GetUuid(),
+					"nodeName": receivedFlow.NodeName,
+					"flow":     fmt.Sprintf("%v", receivedFlow),
+				}).Tracef("hubble message")
 
 				err := a.receiveHubbleMessage(receivedFlow)
 				if err != nil {
@@ -98,33 +100,43 @@ func (a agent) receiveHubbleMessage(receivedFlow *hubblerepostiory.Flow) error {
 		return nil
 	}
 
-	logrus.Trace("analyze hubble message")
+	cacheKey := fmt.Sprintf("%d-%d", receivedFlow.Flow.GetSource().GetIdentity(), receivedFlow.Flow.GetDestination().GetIdentity())
 
-	cacheKey := fmt.Sprintf("%d-%d", receivedFlow.Flow.GetSource().GetID(), receivedFlow.Flow.GetDestination().GetID())
+	logrus.WithFields(logrus.Fields{
+		"id":       receivedFlow.Flow.GetUuid(),
+		"cacheKey": cacheKey,
+	}).Trace("analyze hubble message")
 
 	if lastSent, ok := a.cacheTTLMap.Get(cacheKey); ok {
 		if lastSent.Add(a.Opts.CacheTTL).After(time.Now()) {
-			logrus.Trace("skip cached message")
+			logrus.WithFields(logrus.Fields{
+				"id":       receivedFlow.Flow.GetUuid(),
+				"cacheKey": cacheKey,
+			}).Trace("skip cached message")
 
 			return nil
 		}
 	}
 
-	srcWorkload, err := a.analyseEndpoint(receivedFlow.Flow.GetIP().GetSource(), int(receivedFlow.Flow.GetL4().GetTCP().GetSourcePort()), receivedFlow.Flow.GetSource(), a.SrcAgentModules)
+	srcWorkload, err := a.analyseEndpoint(receivedFlow.Flow.GetUuid(), receivedFlow.Flow.GetIP().GetSource(), int(receivedFlow.Flow.GetL4().GetTCP().GetSourcePort()), receivedFlow.Flow.GetSource(), a.SrcAgentModules)
 	if err != nil {
 		return err
 	}
 
-	dstWorkload, err := a.analyseEndpoint(receivedFlow.Flow.GetIP().GetDestination(), int(receivedFlow.Flow.GetL4().GetTCP().GetDestinationPort()), receivedFlow.Flow.GetDestination(), a.DestAgentModules)
+	dstWorkload, err := a.analyseEndpoint(receivedFlow.Flow.GetUuid(), receivedFlow.Flow.GetIP().GetDestination(), int(receivedFlow.Flow.GetL4().GetTCP().GetDestinationPort()), receivedFlow.Flow.GetDestination(), a.DestAgentModules)
 	if err != nil {
 		return err
 	}
 
-	logrus.Trace("send analyzed hubble message")
+	logrus.WithFields(logrus.Fields{
+		"id":       receivedFlow.Flow.GetUuid(),
+		"cacheKey": cacheKey,
+	}).Trace("send analyzed hubble message")
 
 	err = a.ConnectionMessagingRepo.Send(a.ConnectionSubject, &cisinapi.Connection{
 		Source:      srcWorkload,
 		Destination: dstWorkload,
+		Host:        a.NodeName,
 	})
 	if err != nil {
 		return fmt.Errorf("send message: %w", err)
@@ -135,9 +147,11 @@ func (a agent) receiveHubbleMessage(receivedFlow *hubblerepostiory.Flow) error {
 	return nil
 }
 
+//nolint:funlen // log statements
 func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 	if receivedFlow.NodeName != fmt.Sprintf("%s/%s", a.ClusterName, a.NodeName) {
 		logrus.WithFields(logrus.Fields{
+			"id":       receivedFlow.Flow.GetUuid(),
 			"reason":   "node name mismatch",
 			"received": receivedFlow.NodeName,
 			"expected": fmt.Sprintf("%s/%s", a.ClusterName, a.NodeName),
@@ -148,6 +162,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 
 	if receivedFlow.Flow == nil {
 		logrus.WithFields(logrus.Fields{
+			"id":     receivedFlow.Flow.GetUuid(),
 			"reason": "flow is nil",
 		}).Tracef("skip hubble message")
 
@@ -156,6 +171,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 
 	if receivedFlow.Flow.GetIsReply().GetValue() {
 		logrus.WithFields(logrus.Fields{
+			"id":     receivedFlow.Flow.GetUuid(),
 			"reason": "is reply",
 		}).Tracef("skip hubble message")
 
@@ -164,6 +180,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 
 	if receivedFlow.Flow.GetL4().GetTCP() == nil {
 		logrus.WithFields(logrus.Fields{
+			"id":     receivedFlow.Flow.GetUuid(),
 			"reason": "tcp is nil",
 		}).Tracef("skip hubble message")
 
@@ -172,6 +189,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 
 	if receivedFlow.Flow.GetIP() == nil {
 		logrus.WithFields(logrus.Fields{
+			"id":     receivedFlow.Flow.GetUuid(),
 			"reason": "ip is nil",
 		}).Tracef("skip hubble message")
 
@@ -180,7 +198,19 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 
 	if receivedFlow.Flow.GetSource() == nil {
 		logrus.WithFields(logrus.Fields{
+			"id":     receivedFlow.Flow.GetUuid(),
 			"reason": "source is nil",
+		}).Tracef("skip hubble message")
+
+		return true
+	}
+
+	if receivedFlow.Flow.GetL4().GetTCP().GetSourcePort() < constant.EphemeralPortStart {
+		logrus.WithFields(logrus.Fields{
+			"id":       receivedFlow.Flow.GetUuid(),
+			"reason":   "source port is not in ephemeral range",
+			"received": receivedFlow.Flow.GetL4().GetTCP().GetSourcePort(),
+			"expected": " >= 32768",
 		}).Tracef("skip hubble message")
 
 		return true
@@ -188,6 +218,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 
 	if receivedFlow.Flow.GetDestination() == nil {
 		logrus.WithFields(logrus.Fields{
+			"id":     receivedFlow.Flow.GetUuid(),
 			"reason": "destination is nil",
 		}).Tracef("skip hubble message")
 
@@ -198,7 +229,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 }
 
 //nolint:cyclop
-func (a agent) analyseEndpoint(ipAddress string, port int, endpoint *observer.Endpoint, modules []agentmodule.AgentModule) (*cisinapi.Workload, error) {
+func (a agent) analyseEndpoint(uuid, ipAddress string, port int, endpoint *observer.Endpoint, modules []agentmodule.AgentModule) (*cisinapi.Workload, error) {
 	var err error
 
 	cisinWorkload := &cisinapi.Workload{
@@ -209,19 +240,7 @@ func (a agent) analyseEndpoint(ipAddress string, port int, endpoint *observer.En
 	case slices.Contains(endpoint.GetLabels(), labelReservedWorld):
 		cisinWorkload.Type = cisinapi.WorkloadType_WORLD
 	case slices.Contains(endpoint.GetLabels(), labelReservedHost):
-		cisinWorkload.Type = cisinapi.WorkloadType_VM
-
-		cisinWorkload.Id, err = id.GetVMID(ipAddress, a.NodeName, a.IfacesRepo)
-		if err != nil {
-			return nil, fmt.Errorf("get vm id: %w", err)
-		}
 	case slices.Contains(endpoint.GetLabels(), labelReservedRemoteNode):
-		cisinWorkload.Type = cisinapi.WorkloadType_VM
-
-		cisinWorkload.Id, err = id.GetVMID(ipAddress, a.NodeName, a.IfacesRepo)
-		if err != nil {
-			return nil, fmt.Errorf("get vm id: %w", err)
-		}
 	case slices.Contains(endpoint.GetLabels(), fmt.Sprintf("%s=%s", labelCluster, a.ClusterName)) && slices.Contains(endpoint.GetLabels(), fmt.Sprintf("%s=%s", labelPod, a.NodeName)):
 		cisinWorkload.Type = cisinapi.WorkloadType_VM
 		cisinWorkload.Id = id.GetExternalWorkloadID(a.NodeName)
@@ -242,7 +261,10 @@ func (a agent) analyseEndpoint(ipAddress string, port int, endpoint *observer.En
 
 	analyseMap, err := a.analyze(ipAddress, port, endpoint, modules)
 	if err != nil {
-		logrus.WithField("endpoint", "source").Error(err)
+		logrus.WithFields(logrus.Fields{
+			"id":       uuid,
+			"endpoint": "source",
+		}).Error(err)
 	}
 
 	cisinWorkload.Results = analyseMap

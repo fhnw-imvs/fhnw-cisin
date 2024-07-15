@@ -18,3 +18,5 @@ const (
 	K8sNodeType = "k8s"
 	VMNodeType  = "vm"
 )
+
+const EphemeralPortStart = 32768

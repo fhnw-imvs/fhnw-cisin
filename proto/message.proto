@@ -21,6 +21,7 @@ message SbomVM {
 message Connection {
   Workload source = 1;
   Workload destination = 2;
+  string host = 3;
 }
 
 message Workload {

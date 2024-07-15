@@ -4,6 +4,8 @@ import (
 	"context"
 	"fmt"
 
+	v2 "github.com/cilium/cilium/pkg/k8s/apis/cilium.io/v2"
+	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -13,6 +15,7 @@ import (
 type K8s interface {
 	GetPod(ctx context.Context, name, namespace string) (*corev1.Pod, error)
 	GetReplicaSet(ctx context.Context, name, namespace string) (*appsv1.ReplicaSet, error)
+	GetExternalWorkload(ctx context.Context, name, namespace string) (*v2.CiliumExternalWorkload, error)
 }
 
 type k8s struct {
@@ -41,4 +44,18 @@ func (k k8s) GetReplicaSet(ctx context.Context, name, namespace string) (*appsv1
 	}
 
 	return replicaSet, nil
+}
+
+func (k k8s) GetExternalWorkload(ctx context.Context, name, namespace string) (*v2.CiliumExternalWorkload, error) {
+	obj, err := k.clientset.RESTClient().Get().Namespace(name).Resource(v2.CEWKindDefinition).Name(name).Do(ctx).Get()
+	if err != nil {
+		return nil, fmt.Errorf("get external workload %s from namespace %s: %w", name, namespace, err)
+	}
+
+	w, ok := obj.(*v2.CiliumExternalWorkload)
+	if !ok {
+		return nil, fmt.Errorf("could not cast object to CiliumExternalWorkload: %w", constant.ErrInvalid)
+	}
+
+	return w, nil
 }

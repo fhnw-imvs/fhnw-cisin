@@ -2,37 +2,55 @@ package server
 
 import (
 	"reflect"
+	"sort"
 	"testing"
 
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/safemap"
 )
 
 func Test_server_findRoots(t *testing.T) {
-	type fields struct {
-		neighbourhood safemap.SafeMap[string, []neighbour]
-	}
-
 	tests := []struct {
 		name          string
 		neighbourhood map[string][]neighbour
-		fields        fields
 		want          []string
 	}{
 		{
 			name: "root",
 			neighbourhood: map[string][]neighbour{
-				"1": {
-					{
-						id: "2",
-					},
+
+				"application/Deployment/application": {
+					{id: "application/Deployment/application-child"},
 				},
-				"2": nil,
-			},
-			fields: fields{
-				neighbourhood: safemap.NewSafeMap[string, []neighbour](),
+				"cisin/Deployment/cisin-harbor-core": {
+					{id: "cisin/StatefulSet/cisin-harbor-redis"},
+					{id: "cisin/StatefulSet/cisin-harbor-trivy"},
+					{id: "cisin/StatefulSet/cisin-harbor-database"},
+					{id: "cisin/Deployment/cisin-harbor-registry"},
+					{id: "cisin/Deployment/cisin-harbor-portal"},
+					{id: "cisin/Deployment/cisin-harbor-jobservice"},
+				},
+				"cisin/Deployment/cisin-harbor-jobservice": {
+					{id: "cisin/StatefulSet/cisin-harbor-redis"},
+					{id: "cisin/StatefulSet/cisin-harbor-database"},
+				},
+				"cisin/Deployment/cisin-harbor-nginx": {
+					{id: "cisin/Deployment/cisin-harbor-core"},
+					{id: "cisin/Deployment/cisin-harbor-portal"},
+				},
+				"cisin/Deployment/cisin-harbor-registry": {
+					{id: "cisin/StatefulSet/cisin-harbor-redis"},
+				},
+				"cisin/StatefulSet/cisin-harbor-trivy": {
+					{id: "cisin/StatefulSet/cisin-harbor-redis"},
+				},
+				"external/Workload/external": {
+					{id: "application/Deployment/application"},
+					{id: "cisin/Deployment/cisin-harbor-nginx0"},
+				},
 			},
 			want: []string{
-				"1",
+				"cisin/Deployment/cisin-harbor-nginx",
+				"external/Workload/external",
 			},
 		},
 		{
@@ -49,23 +67,24 @@ func Test_server_findRoots(t *testing.T) {
 					},
 				},
 			},
-			fields: fields{
-				neighbourhood: safemap.NewSafeMap[string, []neighbour](),
-			},
 			want: []string{},
 		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			s := server{
-				Neighbourhood: tt.fields.neighbourhood,
+				Neighbourhood: safemap.NewSafeMap[string, []neighbour](),
 			}
 
 			for key, value := range tt.neighbourhood {
 				s.Neighbourhood.Set(key, value)
 			}
 
-			if got := s.findRoots(); !reflect.DeepEqual(got, tt.want) {
+			roots := s.findRoots()
+
+			sort.Strings(roots)
+
+			if got := roots; !reflect.DeepEqual(got, tt.want) {
 				t.Errorf("findRoots() = %v, want %v", got, tt.want)
 			}
 		})

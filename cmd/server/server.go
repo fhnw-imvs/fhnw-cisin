@@ -16,12 +16,13 @@ import (
 )
 
 type Server struct {
-	Nats                   nats   `embed:""       prefix:"nats-"`
-	Otel                   otel   `embed:""       prefix:"otel-"`
-	K8s                    k8s    `embed:""       prefix:"k8s-"`
-	WorkerpoolSize         int    `default:"50"`
-	WorkerpoolMaxQueueSize int    `default:"1000"`
-	LogLevel               string `default:"info"`
+	Nats                   nats     `embed:""                                                                                         prefix:"nats-"`
+	Otel                   otel     `embed:""                                                                                         prefix:"otel-"`
+	K8s                    k8s      `embed:""                                                                                         prefix:"k8s-"`
+	WorkerpoolSize         int      `default:"50"`
+	WorkerpoolMaxQueueSize int      `default:"1000"`
+	LogLevel               string   `default:"info"`
+	ExcludeWorkloads       []string `default:"cisin/DaemonSet/cisin-agent,cisin/StatefulSet/cisin-nats,cisin/Deployment/cisin-server"`
 }
 
 type nats struct {
@@ -103,6 +104,7 @@ func (s Server) Run() error {
 		SBOMQueue:               s.Nats.SBOMQueue,
 		SBOMVMQueue:             s.Nats.SBOMVMQueue,
 		K8sRepo:                 k8sRepo,
+		ExcludeWorkloads:        s.ExcludeWorkloads,
 	})
 
 	go func() {

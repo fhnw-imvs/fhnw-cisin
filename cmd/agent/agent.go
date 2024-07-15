@@ -18,7 +18,6 @@ import (
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/agentmodule"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/k8sclient"
-	ciliumrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/cilium"
 	containerdaemonrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/containerdaemon"
 	hubblerepostiory "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/hubble"
 	ifacesrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/ifaces"
@@ -115,11 +114,6 @@ func (a Agent) Run() error {
 		}
 	}
 
-	ciliumRepo, err := ciliumrepository.NewHTTP(a.Cilium.Address)
-	if err != nil {
-		return fmt.Errorf("new cilium repo: %w", err)
-	}
-
 	nodeName, err := os.Hostname()
 	if err != nil {
 		return fmt.Errorf("get hostname: %w", err)
@@ -164,7 +158,6 @@ func (a Agent) Run() error {
 		NodeType:                a.NodeType,
 		ConnectionSubject:       a.Hubble.Subject,
 		HubbleRepo:              hubbleRepo,
-		CiliumRepo:              ciliumRepo,
 		IfacesRepo:              ifacesRepo,
 		ConnectionMessagingRepo: connectionMessagingRepo,
 		SrcAgentModules:         srcAgentModules,
@@ -308,6 +301,7 @@ func (a Agent) getModule(moduleName string, k8sRepo k8srepository.K8s) (agentmod
 		if a.NodeType != constant.K8sNodeType {
 			logrus.WithField("name", moduleName).Infof("ignore module")
 
+			//nolint:nilnil
 			return nil, nil
 		}
 
@@ -321,6 +315,7 @@ func (a Agent) getModule(moduleName string, k8sRepo k8srepository.K8s) (agentmod
 		if a.NodeType != constant.K8sNodeType {
 			logrus.WithField("name", moduleName).Infof("ignore module")
 
+			//nolint:nilnil
 			return nil, nil
 		}
 

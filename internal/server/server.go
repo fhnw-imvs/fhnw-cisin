@@ -19,6 +19,7 @@ import (
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/safemap"
 	"go.opentelemetry.io/otel/attribute"
 	"go.opentelemetry.io/otel/trace"
+	"k8s.io/apimachinery/pkg/api/errors"
 )
 
 type Server interface {
@@ -46,6 +47,7 @@ type Opts struct {
 	SBOMQueue               string
 	SBOMVMQueue             string
 	K8sRepo                 k8srepository.K8s
+	ExcludeWorkloads        []string
 }
 
 func NewServer(opts Opts) Server {
@@ -101,7 +103,11 @@ func (s server) startSBOM(ctx context.Context) error {
 			for sbom := range sbomChan {
 				s.IDToSBOMURl.Set(sbom.GetDigest(), sbom.GetUrl())
 
-				logrus.WithField("type", "sbom").Tracef("message received")
+				logrus.WithFields(logrus.Fields{
+					"type": "sbom",
+					"key":  sbom.GetDigest(),
+					"url":  sbom.GetUrl(),
+				}).Tracef("message received")
 			}
 		}()
 
@@ -109,7 +115,11 @@ func (s server) startSBOM(ctx context.Context) error {
 			for sbom := range sbomVMChan {
 				s.IDToSBOMURl.Set(sbom.GetHostname(), sbom.GetUrl())
 
-				logrus.WithField("type", "sbomvm").Tracef("message received")
+				logrus.WithFields(logrus.Fields{
+					"type": "sbomvm",
+					"key":  sbom.GetHostname(),
+					"url":  sbom.GetUrl(),
+				}).Tracef("message received")
 			}
 		}()
 	}
@@ -153,11 +163,17 @@ func (s server) startTracing(ctx context.Context) error {
 	return nil
 }
 
+//nolint:funlen // log statements
 func (s server) receiveConnectionMessage(ctx context.Context, connection *cisinapi.Connection) error {
 	logger := logrus.WithField("type", "connection")
 	src := connection.GetSource()
 	dest := connection.GetDestination()
 	now := time.Now()
+
+	logger.WithFields(
+		logrus.Fields{
+			"connection": fmt.Sprintf("%v", connection),
+		}).Trace("message received")
 
 	srcID, err := s.translateWorkloadID(ctx, src.GetId())
 	if err != nil {
@@ -167,6 +183,27 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 	destID, err := s.translateWorkloadID(ctx, dest.GetId())
 	if err != nil {
 		return err
+	}
+
+	// world id is not interesting because we can not generate a SBOM for the world :)
+	if srcID == constant.WorldID || destID == constant.WorldID {
+		logger.WithFields(
+			logrus.Fields{
+				"srcID":  srcID,
+				"destID": destID,
+			}).Tracef("ignore world id")
+
+		return nil
+	}
+
+	if slices.Contains(s.ExcludeWorkloads, srcID) || slices.Contains(s.ExcludeWorkloads, destID) {
+		logger.WithFields(
+			logrus.Fields{
+				"srcID":  srcID,
+				"destID": destID,
+			}).Tracef("excluded workload")
+
+		return nil
 	}
 
 	existingSrc, _ := s.Participants.Get(srcID)
@@ -185,6 +222,19 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 		destResults: dest.GetResults(),
 		timestamp:   now,
 	})
+
+	destNeighbourhood, _ := s.Neighbourhood.Get(destID)
+	if slices.ContainsFunc(destNeighbourhood, func(n neighbour) bool {
+		return n.id == srcID
+	}) {
+		logger.WithFields(
+			logrus.Fields{
+				"srcID":  srcID,
+				"destID": destID,
+			}).Tracef("already in destination neighbourhood")
+
+		return nil
+	}
 
 	neighbourhood, _ := s.Neighbourhood.Get(srcID)
 
@@ -206,7 +256,11 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 
 	s.Neighbourhood.Set(srcID, neighbourhood)
 
-	logger.Trace("message received")
+	logger.WithFields(
+		logrus.Fields{
+			"srcID":  srcID,
+			"destID": destID,
+		}).Trace("message processed")
 
 	return nil
 }
@@ -249,50 +303,28 @@ func (s server) buildTraces(ctx context.Context) {
 
 	roots := s.findRoots()
 
-	worldNeighbours, _ := s.Neighbourhood.Get(constant.WorldID)
+	logrus.WithField("roots", roots).Trace("found roots")
 
 	for _, root := range roots {
-		if root == constant.WorldID {
-			continue
-		}
-
-		isWorldNeighbour := slices.ContainsFunc(worldNeighbours, func(n neighbour) bool {
-			return n.id == root
-		})
-
-		if !isWorldNeighbour {
-			s.buildTrace(ctx, root, nil)
-
-			continue
-		}
-
-		logrus.Debugf("world neighbour")
-
-		var span trace.Span
-
-		ctx, span = s.TracingRepo.GetProvider().Tracer("cisin").Start(ctx, constant.WorldID)
-
-		s.buildTrace(ctx, root, []string{constant.WorldID})
-
-		span.End()
+		s.buildTrace(ctx, root, nil)
 	}
 }
 
 //nolint:funlen,cyclop
-func (s server) buildTrace(ctx context.Context, id string, idsInTrace []string) {
+func (s server) buildTrace(ctx context.Context, workloadID string, idsInTrace []string) {
 	var span trace.Span
 
-	idsInTrace = append(idsInTrace, id)
+	idsInTrace = append(idsInTrace, workloadID)
 
 	//nolint:varnamelen
-	participant, ok := s.Participants.Get(id)
+	participant, ok := s.Participants.Get(workloadID)
 	if !ok {
 		return
 	}
 
 	attributes := make([]attribute.KeyValue, 0)
 
-	digests := make([]string, 0)
+	sbomIDs := make([]string, 0)
 
 	for moduleName, analyse := range participant.destResults {
 		attributes = append(attributes, attribute.KeyValue{
@@ -301,7 +333,7 @@ func (s server) buildTrace(ctx context.Context, id string, idsInTrace []string) 
 		})
 
 		if moduleName == agentmodule.K8sDigestModuleName {
-			digests = analyse.GetResults()
+			sbomIDs = analyse.GetResults()
 		}
 	}
 
@@ -323,25 +355,26 @@ func (s server) buildTrace(ctx context.Context, id string, idsInTrace []string) 
 		}
 
 		if moduleName == agentmodule.K8sDigestModuleName {
-			digests = analyse.GetResults()
+			sbomIDs = analyse.GetResults()
 		}
 	}
 
-	sboms := s.getSBOMsFromResults(digests)
+	_, kind, name, _ := id.ParseID(workloadID)
+	if kind == id.ExternalWorkloadKind {
+		sbomIDs = []string{name}
+	}
+
+	sboms := s.getSBOMsFromResults(sbomIDs)
 	attributes = append(attributes, attribute.KeyValue{
 		Key:   constant.SBOMsTraceTag,
 		Value: attribute.StringSliceValue(sboms),
 	})
 
-	ctx, span = s.TracingRepo.GetProvider().Tracer("cisin").Start(ctx, id, trace.WithAttributes(attributes...))
+	ctx, span = s.TracingRepo.GetProvider().Tracer("cisin").Start(ctx, workloadID, trace.WithAttributes(attributes...))
 
 	defer span.End()
 
-	if id == constant.WorldID {
-		return
-	}
-
-	neighbourhood, ok := s.Neighbourhood.Get(id)
+	neighbourhood, ok := s.Neighbourhood.Get(workloadID)
 	if !ok {
 		return
 	}
@@ -366,8 +399,20 @@ func (s server) translateWorkloadID(ctx context.Context, workloadID string) (str
 	}
 
 	pod, err := s.K8sRepo.GetPod(ctx, name, namespace)
+	if errors.IsNotFound(err) {
+		// Based on cilium flow tagging it can happen, that an external workload is falsely labeled as pod. We check here if this is the case.
+		logrus.WithField("id", workloadID).Debugf("pod not found - try to load external workload")
+
+		_, extErr := s.K8sRepo.GetExternalWorkload(ctx, name, namespace)
+		if extErr != nil {
+			return "", fmt.Errorf("get external workload: %w: %w", extErr, err)
+		}
+
+		return id.GetExternalWorkloadID(name), nil
+	}
+
 	if err != nil {
-		return "", fmt.Errorf("get pod %s from namespace %s: %w", name, namespace, err)
+		return "", fmt.Errorf("could not get pod %s for workload ID %s from namespace %s: %w", name, workloadID, namespace, err)
 	}
 
 	if len(pod.OwnerReferences) == 0 {
@@ -408,10 +453,6 @@ func (s server) findRoots() []string {
 			}
 
 			if slices.ContainsFunc(potentialCalleesNeighbours, func(n neighbour) bool {
-				if n.id == constant.WorldID {
-					return false
-				}
-
 				return n.id == key
 			}) {
 				root = false
@@ -430,7 +471,23 @@ func (s server) getSBOMsFromResults(digests []string) []string {
 	sboms := make([]string, len(digests))
 
 	for i, result := range digests {
-		sbom, _ := s.IDToSBOMURl.Get(result)
+		sbom, ok := s.IDToSBOMURl.Get(result)
+		if !ok {
+			logrus.WithFields(
+				logrus.Fields{
+					"key": result,
+				},
+			).Warn("no sbom found")
+
+			continue
+		}
+
+		logrus.WithFields(
+			logrus.Fields{
+				"key": result,
+				"url": sbom,
+			},
+		).Tracef("sbom found")
 
 		sboms[i] = sbom
 	}
