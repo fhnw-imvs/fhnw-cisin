@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cisin-server
+  labels:
+    app: cisin-server
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cisin-server
+  template:
+    metadata:
+      name: cisin-server
+      labels:
+        app: cisin-server
+    spec:
+      serviceAccountName: cisin
+      containers:
+        - name: cisin-server
+          image: cr.gitlab.fhnw.ch/cloud/mse-cloud/cisin:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /opt/cisin
+          env:
+            - name: CISIN_NATS_ADDRESS
+              value: cisin-nats:4222
+            - name: CISIN_OTEL_ADDRESS
+              value: jaeger:4317
+            - name: CISIN_K8S_IN_CLUSTER
+              value: "true"
+            - name: CISIN_EXCLUDE_WORKLOADS
+              value: cisin/DaemonSet/cisin-agent,cisin/StatefulSet/cisin-nats,cisin/Deployment/cisin-server,kube-system/Deployment/hubble-relay

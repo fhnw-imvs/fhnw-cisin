@@ -28,6 +28,7 @@ func (k k8sImageModule) Analyze(_ string, _ int, endpoint *flow.Endpoint) (*cisi
 	podName := endpoint.GetPodName()
 	podNamespace := endpoint.GetNamespace()
 
+	// get pod from Kubernetes API
 	pod, err := k.k8sRepo.GetPod(context.Background(), podName, podNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("get pod %s from namespace %s: %w", pod, podNamespace, err)
@@ -35,6 +36,7 @@ func (k k8sImageModule) Analyze(_ string, _ int, endpoint *flow.Endpoint) (*cisi
 
 	images := make([]string, 0)
 
+	// extract all images from pod
 	for _, container := range pod.Spec.Containers {
 		ref, err := name.ParseReference(container.Image)
 		if err != nil {

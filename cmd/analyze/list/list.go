@@ -1,3 +1,4 @@
+// Package list contains the list command. The list command lists trace ids from a Jaeger instance.
 package list
 
 import (
@@ -7,11 +8,13 @@ import (
 	traceservice "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service/trace"
 )
 
+// List is the command to list trace ids from Jaeger.
 type List struct {
-	Jaeger      string `default:"http://localhost:14268"`
-	ServiceName string `default:"cisin"`
+	Jaeger      string `default:"http://localhost:14268" help:"Jaeger address"`
+	ServiceName string `default:"cisin"                  help:"Service name"`
 }
 
+// Run executes the command.
 func (l List) Run() error {
 	apiRepo := apirepository.NewAPI(l.Jaeger)
 

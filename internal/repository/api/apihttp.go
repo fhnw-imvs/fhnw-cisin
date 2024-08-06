@@ -12,6 +12,7 @@ type apiHTTP struct {
 	address string
 }
 
+// NewAPI creates a http based implementation of API.
 func NewAPI(address string) API {
 	return &apiHTTP{
 		address: address,

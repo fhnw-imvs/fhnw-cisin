@@ -6,6 +6,7 @@ import (
 
 type noop[T any, U protoMessage[T]] struct{}
 
+// NewNoop returns a noop implementation of Messaging.
 func NewNoop[T any, U protoMessage[T]]() Messaging[T, U] {
 	return noop[T, U]{}
 }

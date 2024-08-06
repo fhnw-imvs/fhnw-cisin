@@ -1,3 +1,4 @@
+// Package secscanservice contains a Grype based implementation of service.SecScanService
 package secscanservice
 
 import (
@@ -16,6 +17,7 @@ type secScanService struct {
 	registryRepo registryrepository.Registry
 }
 
+// New creates a new service.SecScanService.
 func New(registryRepo registryrepository.Registry) service.SecScanService {
 	return secScanService{
 		registryRepo: registryRepo,
@@ -23,11 +25,13 @@ func New(registryRepo registryrepository.Registry) service.SecScanService {
 }
 
 func (s secScanService) Scan(sbomURLs []string) error {
+	// update vulnerability datatbase
 	_, err := exec.Command("grype", "db", "update").CombinedOutput()
 	if err != nil {
 		return fmt.Errorf("failed to grype db: %w", err)
 	}
 
+	// scan every SBOM from provided URLs
 	for _, sbomURL := range sbomURLs {
 		image, err := s.registryRepo.Pull(sbomURL)
 		if err != nil {

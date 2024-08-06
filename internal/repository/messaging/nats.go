@@ -14,6 +14,7 @@ type natsRepo[T any, U protoMessage[T]] struct {
 	conn *nats.Conn
 }
 
+// NewNATS returns a NATS based implementation of Messaging.
 func NewNATS[T any, U protoMessage[T]](address string) (Messaging[T, U], error) {
 	natsConnection, err := nats.Connect(address)
 	if err != nil {
@@ -66,7 +67,6 @@ func (n natsRepo[T, U]) Receive(ctx context.Context, subject, queue string) (cha
 		for {
 			select {
 			case msg := <-chanMsg:
-				//nolint:varnamelen
 				var u U
 
 				u = new(T)

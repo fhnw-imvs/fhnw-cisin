@@ -12,7 +12,9 @@ type ifacesNet struct {
 	ipAddresses []string
 }
 
+// NewIfacesNet represents a net based implementation of Ifaces.
 func NewIfacesNet() (Ifaces, error) {
+	// get host interfaces
 	ifaces, err := net.Interfaces()
 	if err != nil {
 		return nil, fmt.Errorf("listing interfaces: %w", err)
@@ -20,6 +22,7 @@ func NewIfacesNet() (Ifaces, error) {
 
 	ipAddresses := make([]string, 0)
 
+	// get ip addresses from interfaces
 	for _, iface := range ifaces {
 		addresses, err := iface.Addrs()
 		if err != nil {

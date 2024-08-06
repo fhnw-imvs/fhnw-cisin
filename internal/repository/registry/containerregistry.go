@@ -17,6 +17,7 @@ type containerRegistry struct {
 	url       string
 }
 
+// NewContainerRegistry returns an implementation of Registry.
 func NewContainerRegistry(url, username, secret string, insecure bool) Registry {
 	opts := []crane.Option{
 		crane.WithAuth(&authn.Basic{

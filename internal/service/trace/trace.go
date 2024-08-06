@@ -1,3 +1,4 @@
+// Package traceservice provides an implementation of service.TraceService
 package traceservice
 
 import (
@@ -55,6 +56,7 @@ type traceSpanReference struct {
 	SpanID  string `json:"spanID"`
 }
 
+// New creates a new service.TraceService.
 func New(apiRepo apirepository.API, serviceName string) service.TraceService {
 	return traceService{
 		apiRepo:     apiRepo,
@@ -63,6 +65,7 @@ func New(apiRepo apirepository.API, serviceName string) service.TraceService {
 }
 
 func (t traceService) List() ([]string, error) {
+	// get traces from API
 	data, err := t.apiRepo.Get(fmt.Sprintf("/api/traces?service=%s", t.serviceName))
 	if err != nil {
 		return nil, fmt.Errorf("could not get traces: %w", err)
@@ -75,6 +78,7 @@ func (t traceService) List() ([]string, error) {
 		return nil, fmt.Errorf("could not unmarshal traces: %w", err)
 	}
 
+	// extract trace ids
 	traceIDs := make([]string, 0, len(receivedTrace.Data))
 	for _, item := range receivedTrace.Data {
 		traceIDs = append(traceIDs, item.TraceID)
@@ -84,6 +88,7 @@ func (t traceService) List() ([]string, error) {
 }
 
 func (t traceService) ListSBOMs(traceID string) ([]string, error) {
+	// request trace from API
 	data, err := t.apiRepo.Get(fmt.Sprintf("/api/traces/%s", traceID))
 	if err != nil {
 		return nil, fmt.Errorf("could not get traces: %w", err)
@@ -96,6 +101,7 @@ func (t traceService) ListSBOMs(traceID string) ([]string, error) {
 		return nil, fmt.Errorf("could not unmarshal traces: %w", err)
 	}
 
+	// extract SBOM urls from trace
 	sbomURLs := make([]string, 0)
 
 	for _, item := range receivedTrace.Data {

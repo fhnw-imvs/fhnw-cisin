@@ -1,3 +1,4 @@
+// Package agentcilium generates NATS messages base on Hubble socket
 package agentcilium
 
 import (
@@ -10,6 +11,7 @@ import (
 	"github.com/cilium/cilium/api/v1/observer"
 	"github.com/sirupsen/logrus"
 	cisinapi "gitlab.fhnw.ch/cloud/mse-cloud/cisin/gen/go/proto"
+	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/agent"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/agentmodule"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/id"
@@ -19,10 +21,7 @@ import (
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/safemap"
 )
 
-type Agent interface {
-	Start(ctx context.Context) error
-}
-
+// Opts contains options.
 type Opts struct {
 	ClusterName             string
 	NodeName                string
@@ -50,30 +49,32 @@ const (
 	labelPod                    = "k8s:io.kubernetes.pod.name"
 )
 
-type agent struct {
+type agentCilium struct {
 	Opts
 	cacheTTLMap safemap.SafeMap[string, time.Time]
 }
 
-func NewAgent(opts Opts) (Agent, error) {
-	return agent{
+// NewAgent creates a Cilium agent.
+func NewAgent(opts Opts) (agent.Agent, error) {
+	return agentCilium{
 		Opts:        opts,
 		cacheTTLMap: safemap.NewSafeMap[string, time.Time](),
 	}, nil
 }
 
-func (a agent) Start(ctx context.Context) error {
+func (a agentCilium) Start(ctx context.Context) error {
 	a.startHubble(ctx)
 
 	return nil
 }
 
-func (a agent) startHubble(ctx context.Context) {
+func (a agentCilium) startHubble(ctx context.Context) {
 	flowChan, errChan := a.HubbleRepo.StartFlowChannel(ctx)
 
 	go func() {
 		logger := logrus.WithField("type", "hubble")
 
+		// receive hubble flows
 		for {
 			select {
 			case <-ctx.Done():
@@ -95,11 +96,13 @@ func (a agent) startHubble(ctx context.Context) {
 	}()
 }
 
-func (a agent) receiveHubbleMessage(receivedFlow *hubblerepostiory.Flow) error {
+func (a agentCilium) receiveHubbleMessage(receivedFlow *hubblerepostiory.Flow) error {
+	// check if flow should be analyzed
 	if a.skipAnalyze(receivedFlow) {
 		return nil
 	}
 
+	// check if flow is cached
 	cacheKey := fmt.Sprintf("%d-%d", receivedFlow.Flow.GetSource().GetIdentity(), receivedFlow.Flow.GetDestination().GetIdentity())
 
 	logrus.WithFields(logrus.Fields{
@@ -118,11 +121,14 @@ func (a agent) receiveHubbleMessage(receivedFlow *hubblerepostiory.Flow) error {
 		}
 	}
 
+	// analyze flow source
 	srcWorkload, err := a.analyseEndpoint(receivedFlow.Flow.GetUuid(), receivedFlow.Flow.GetIP().GetSource(), int(receivedFlow.Flow.GetL4().GetTCP().GetSourcePort()), receivedFlow.Flow.GetSource(), a.SrcAgentModules)
 	if err != nil {
 		return err
 	}
 
+	// analyze flow destination - this analysis is simpler than the analysis from src workload, because the destination is probably not on
+	// the same host as the agent is running
 	dstWorkload, err := a.analyseEndpoint(receivedFlow.Flow.GetUuid(), receivedFlow.Flow.GetIP().GetDestination(), int(receivedFlow.Flow.GetL4().GetTCP().GetDestinationPort()), receivedFlow.Flow.GetDestination(), a.DestAgentModules)
 	if err != nil {
 		return err
@@ -133,6 +139,7 @@ func (a agent) receiveHubbleMessage(receivedFlow *hubblerepostiory.Flow) error {
 		"cacheKey": cacheKey,
 	}).Trace("send analyzed hubble message")
 
+	// publish analysis result to NATS
 	err = a.ConnectionMessagingRepo.Send(a.ConnectionSubject, &cisinapi.Connection{
 		Source:      srcWorkload,
 		Destination: dstWorkload,
@@ -142,13 +149,15 @@ func (a agent) receiveHubbleMessage(receivedFlow *hubblerepostiory.Flow) error {
 		return fmt.Errorf("send message: %w", err)
 	}
 
+	// add message to cache
 	a.cacheTTLMap.Set(cacheKey, time.Now())
 
 	return nil
 }
 
 //nolint:funlen // log statements
-func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
+func (a agentCilium) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
+	// check if flow belongs to this host
 	if receivedFlow.NodeName != fmt.Sprintf("%s/%s", a.ClusterName, a.NodeName) {
 		logrus.WithFields(logrus.Fields{
 			"id":       receivedFlow.Flow.GetUuid(),
@@ -160,6 +169,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 		return true
 	}
 
+	// check if flow is nil
 	if receivedFlow.Flow == nil {
 		logrus.WithFields(logrus.Fields{
 			"id":     receivedFlow.Flow.GetUuid(),
@@ -169,6 +179,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 		return true
 	}
 
+	// check if flow is reply
 	if receivedFlow.Flow.GetIsReply().GetValue() {
 		logrus.WithFields(logrus.Fields{
 			"id":     receivedFlow.Flow.GetUuid(),
@@ -178,6 +189,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 		return true
 	}
 
+	// check if TCP information is set
 	if receivedFlow.Flow.GetL4().GetTCP() == nil {
 		logrus.WithFields(logrus.Fields{
 			"id":     receivedFlow.Flow.GetUuid(),
@@ -187,6 +199,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 		return true
 	}
 
+	// check if IP information is set
 	if receivedFlow.Flow.GetIP() == nil {
 		logrus.WithFields(logrus.Fields{
 			"id":     receivedFlow.Flow.GetUuid(),
@@ -196,6 +209,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 		return true
 	}
 
+	// check if source is not empty
 	if receivedFlow.Flow.GetSource() == nil {
 		logrus.WithFields(logrus.Fields{
 			"id":     receivedFlow.Flow.GetUuid(),
@@ -205,6 +219,8 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 		return true
 	}
 
+	// check if source port is in ephemeral range - on external workload replies are not always recognized properly ->
+	// to distinct between request and reply, we assume requests have ephemeral port as source port
 	if receivedFlow.Flow.GetL4().GetTCP().GetSourcePort() < constant.EphemeralPortStart {
 		logrus.WithFields(logrus.Fields{
 			"id":       receivedFlow.Flow.GetUuid(),
@@ -216,6 +232,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 		return true
 	}
 
+	// check if destination is not empty
 	if receivedFlow.Flow.GetDestination() == nil {
 		logrus.WithFields(logrus.Fields{
 			"id":     receivedFlow.Flow.GetUuid(),
@@ -229,7 +246,7 @@ func (a agent) skipAnalyze(receivedFlow *hubblerepostiory.Flow) bool {
 }
 
 //nolint:cyclop
-func (a agent) analyseEndpoint(uuid, ipAddress string, port int, endpoint *observer.Endpoint, modules []agentmodule.AgentModule) (*cisinapi.Workload, error) {
+func (a agentCilium) analyseEndpoint(uuid, ipAddress string, port int, endpoint *observer.Endpoint, modules []agentmodule.AgentModule) (*cisinapi.Workload, error) {
 	var err error
 
 	cisinWorkload := &cisinapi.Workload{
@@ -242,7 +259,7 @@ func (a agent) analyseEndpoint(uuid, ipAddress string, port int, endpoint *obser
 	case slices.Contains(endpoint.GetLabels(), labelReservedHost):
 	case slices.Contains(endpoint.GetLabels(), labelReservedRemoteNode):
 	case slices.Contains(endpoint.GetLabels(), fmt.Sprintf("%s=%s", labelCluster, a.ClusterName)) && slices.Contains(endpoint.GetLabels(), fmt.Sprintf("%s=%s", labelPod, a.NodeName)):
-		cisinWorkload.Type = cisinapi.WorkloadType_VM
+		cisinWorkload.Type = cisinapi.WorkloadType_HOST
 		cisinWorkload.Id = id.GetExternalWorkloadID(a.NodeName)
 	case slices.Contains(endpoint.GetLabels(), labelReservedHealth):
 	case slices.Contains(endpoint.GetLabels(), labelReservedIngress):
@@ -272,7 +289,7 @@ func (a agent) analyseEndpoint(uuid, ipAddress string, port int, endpoint *obser
 	return cisinWorkload, nil
 }
 
-func (a agent) analyze(ipAddr string, port int, e *flow.Endpoint, modules []agentmodule.AgentModule) (map[string]*cisinapi.Analyse, error) {
+func (a agentCilium) analyze(ipAddr string, port int, e *flow.Endpoint, modules []agentmodule.AgentModule) (map[string]*cisinapi.Analyse, error) {
 	analyseMap := make(map[string]*cisinapi.Analyse)
 
 	for _, module := range modules {

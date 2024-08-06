@@ -1,4 +1,5 @@
-package sbomvmservice
+// Package sbomhostservice contains a host based implementation of service.SBOMService
+package sbomhostservice
 
 import (
 	"context"
@@ -16,23 +17,25 @@ import (
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service"
 )
 
-type sbomvmService struct {
+type sbomhostService struct {
 	registryRepo registryrepository.Registry
 	sbomRepo     sbomrepository.SBOM
 	nodeName     string
 }
 
+// New creates a new service.SBOMService.
 func New(nodeName string, registryRepo registryrepository.Registry, sbomRepo sbomrepository.SBOM) service.SBOMService {
-	return sbomvmService{
+	return sbomhostService{
 		registryRepo: registryRepo,
 		sbomRepo:     sbomRepo,
 		nodeName:     nodeName,
 	}
 }
 
-func (s sbomvmService) GenerateSBOM(_ context.Context, location string) (string, error) {
-	logrus.Infof("generate vm sbom")
+func (s sbomhostService) GenerateSBOM(_ context.Context, location string) (string, error) {
+	logrus.Infof("generate host sbom")
 
+	// create SBOM
 	sbomImageName := fmt.Sprintf("%s/%s", s.registryRepo.GetURL(), s.nodeName)
 
 	data, err := s.sbomRepo.GetSBOM(location)
@@ -47,6 +50,7 @@ func (s sbomvmService) GenerateSBOM(_ context.Context, location string) (string,
 
 	logrus.WithField("target", sbomImageName).Info("SBOM location")
 
+	// push SBOM
 	err = s.registryRepo.Push(sbomImageName, sbomImage)
 	if err != nil {
 		return "", fmt.Errorf("registry repo: %w", err)

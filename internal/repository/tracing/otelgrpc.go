@@ -45,6 +45,7 @@ func (o otelGrpc) Start(ctx context.Context) error {
 	return nil
 }
 
+// NewTracingOtelGrpc returns a otel based implementation of Tracing.
 func NewTracingOtelGrpc(serviceName, endpoint string) Tracing {
 	return otelGrpc{
 		endpoint:    endpoint,

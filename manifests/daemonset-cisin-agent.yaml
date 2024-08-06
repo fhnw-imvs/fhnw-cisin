@@ -1,0 +1,72 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: cisin-agent
+  labels:
+    app: cisin-agent
+spec:
+  selector:
+    matchLabels:
+      app: cisin-agent
+  template:
+    metadata:
+      name: cisin-agent
+      labels:
+        app: cisin-agent
+    spec:
+      tolerations:
+        - effect: NoSchedule
+          key: node-role.kubernetes.io/control-plane
+      serviceAccountName: cisin
+      containers:
+        - name: cisin-agent
+          image: cr.gitlab.fhnw.ch/cloud/mse-cloud/cisin:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /opt/cisin
+          securityContext:
+            capabilities:
+              add:
+                - CAP_NET_ADMIN
+          args:
+            - agent
+          env:
+            - name: CISIN_NATS_ADDRESS
+              value: cisin-nats:4222
+            - name: CISIN_CLUSTER_NAME
+              value: mse
+            - name: CISIN_K8S_IN_CLUSTER
+              value: "true"
+            - name: CISIN_NODE_NAME
+              valueFrom:
+                fieldRef:
+                  fieldPath: spec.nodeName
+            - name: CISIN_CONTAINERD_NAMESPACE
+              value: "k8s.io"
+            - name: CISIN_REGISTRY_SECRET
+              valueFrom:
+                secretKeyRef:
+                  key: registry
+                  name: cisin
+            - name: CISIN_REGISTRY_USERNAME
+              value: "robot$cisin+k8s"
+          volumeMounts:
+            - mountPath: /var/run/cilium/cilium.sock
+              name: cilium
+            - mountPath: /var/run/cilium/hubble.sock
+              name: hubble
+            - mountPath: /var/run/containerd/containerd.sock
+              name: containerd
+      restartPolicy: Always
+      volumes:
+        - name: cilium
+          hostPath:
+            path: /var/run/cilium/cilium.sock
+        - name: hubble
+          hostPath:
+            path: /var/run/cilium/hubble.sock
+        - name: containerd
+          hostPath:
+            path: /var/run/containerd/containerd.sock
+
+  

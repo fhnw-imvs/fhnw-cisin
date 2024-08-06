@@ -11,6 +11,7 @@ import (
 	k8srepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/k8s"
 )
 
+// K8sDigestModuleName is the name of the K8s digest module.
 const K8sDigestModuleName = "k8s_digest"
 
 type k8sDigestModule struct {
@@ -28,6 +29,7 @@ func (k k8sDigestModule) Analyze(_ string, _ int, endpoint *flow.Endpoint) (*cis
 	podName := endpoint.GetPodName()
 	podNamespace := endpoint.GetNamespace()
 
+	// get pod from Kubernetes API
 	pod, err := k.k8sRepo.GetPod(context.Background(), podName, podNamespace)
 	if err != nil {
 		return nil, fmt.Errorf("get pod %s from namespace %s: %w", podName, podNamespace, err)
@@ -35,6 +37,7 @@ func (k k8sDigestModule) Analyze(_ string, _ int, endpoint *flow.Endpoint) (*cis
 
 	digests := make([]string, 0)
 
+	// extract all digests from pod
 	for _, container := range pod.Status.ContainerStatuses {
 		ref, err := name.ParseReference(container.ImageID)
 		if err != nil {

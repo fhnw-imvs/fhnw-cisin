@@ -2,6 +2,8 @@ package service
 
 import "context"
 
+// SBOMService provides SBOM related services.
 type SBOMService interface {
-	GenerateSBOM(ctx context.Context, location string) (string, error)
+	// GenerateSBOM generate a SBOM
+	GenerateSBOM(ctx context.Context, identifier string) (string, error)
 }

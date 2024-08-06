@@ -1,4 +1,5 @@
-package sbomservice
+// Package sbomimageservice contains image based implementation of service.SBOM
+package sbomimageservice
 
 import (
 	"context"
@@ -27,6 +28,7 @@ type sbomService struct {
 	sbomRepo            sbomrepository.SBOM
 }
 
+// New creates a new service.SBOMService.
 func New(containerDaemonRepo containerdaemonrepository.ContainerDaemon, registryRepo registryrepository.Registry, sbomRepo sbomrepository.SBOM) service.SBOMService {
 	return sbomService{
 		containerDaemonRepo: containerDaemonRepo,
@@ -36,6 +38,7 @@ func New(containerDaemonRepo containerdaemonrepository.ContainerDaemon, registry
 }
 
 func (s sbomService) GenerateSBOM(ctx context.Context, image string) (string, error) {
+	// check if SBOM already exists
 	digest, err := s.containerDaemonRepo.GetDigest(ctx, image)
 	if err != nil {
 		return "", fmt.Errorf("get digest: %w", err)
@@ -55,11 +58,13 @@ func (s sbomService) GenerateSBOM(ctx context.Context, image string) (string, er
 		return sbomImageName, nil
 	}
 
+	// check if from image provider exists
 	remoteSBOM, err := s.sbomRepo.GetSBOMURL(ctx, image)
 	if err == nil {
 		return remoteSBOM, nil
 	}
 
+	// generate SBOM
 	logrus.Infof("need to generate SBOM")
 
 	data, err := s.sbomRepo.GetSBOM(image)
@@ -74,6 +79,7 @@ func (s sbomService) GenerateSBOM(ctx context.Context, image string) (string, er
 
 	logrus.WithField("target", sbomImageName).Info("SBOM location")
 
+	// push SBOM to registry
 	err = s.registryRepo.Push(sbomImageName, sbomImage)
 	if err != nil {
 		return "", fmt.Errorf("registry repo: %w", err)

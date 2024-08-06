@@ -80,12 +80,12 @@ func Test_server_findRoots(t *testing.T) {
 				s.Neighbourhood.Set(key, value)
 			}
 
-			roots := s.findRoots()
+			roots := s.findTraceRoots()
 
 			sort.Strings(roots)
 
 			if got := roots; !reflect.DeepEqual(got, tt.want) {
-				t.Errorf("findRoots() = %v, want %v", got, tt.want)
+				t.Errorf("findTraceRoots() = %v, want %v", got, tt.want)
 			}
 		})
 	}

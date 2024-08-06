@@ -1,4 +1,5 @@
-package agentsbomvm
+// Package agentsbomhost generates SBOMs for external workloads and publishes information about generated SBOMs to NATS
+package agentsbomhost
 
 import (
 	"context"
@@ -13,9 +14,10 @@ import (
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service"
 )
 
+// Opts contains options.
 type Opts struct {
-	SBOMVMSubject          string
-	SBOMVMMessagingRepo    messagingrepository.Messaging[cisinapi.SbomVM, *cisinapi.SbomVM]
+	SBOMHostSubject        string
+	SBOMHostMessagingRepo  messagingrepository.Messaging[cisinapi.Sbom, *cisinapi.Sbom]
 	SBOMService            service.SBOMService
 	SBOMGenerationInterval time.Duration
 	SBOMRoot               string
@@ -25,6 +27,7 @@ type agentSBOM struct {
 	Opts
 }
 
+// NewAgent creates a host SBOM agent.
 func NewAgent(opts Opts) (agent.Agent, error) {
 	return agentSBOM{
 		opts,
@@ -32,19 +35,20 @@ func NewAgent(opts Opts) (agent.Agent, error) {
 }
 
 func (a agentSBOM) Start(ctx context.Context) error {
-	a.startVMSBOM(ctx)
+	a.startSBOMHost(ctx)
 
 	return nil
 }
 
-func (a agentSBOM) startVMSBOM(ctx context.Context) {
+func (a agentSBOM) startSBOMHost(ctx context.Context) {
 	go func() {
+		// generate SBOMs in time intervals
 		ticker := time.NewTicker(a.SBOMGenerationInterval)
 		logger := logrus.WithField("type", "sbom")
 
 		logger.Info("start")
 
-		err := a.createVMSBOM(ctx)
+		err := a.createSBOMHost(ctx)
 		if err != nil {
 			logger.Error(err)
 		}
@@ -54,7 +58,7 @@ func (a agentSBOM) startVMSBOM(ctx context.Context) {
 			case <-ctx.Done():
 				return
 			case <-ticker.C:
-				err := a.createVMSBOM(ctx)
+				err := a.createSBOMHost(ctx)
 				if err != nil {
 					logger.Error(err)
 				}
@@ -63,7 +67,7 @@ func (a agentSBOM) startVMSBOM(ctx context.Context) {
 	}()
 }
 
-func (a agentSBOM) createVMSBOM(ctx context.Context) error {
+func (a agentSBOM) createSBOMHost(ctx context.Context) error {
 	logger := logrus.WithField("type", "sbom")
 
 	hostname, err := os.Hostname()
@@ -73,6 +77,7 @@ func (a agentSBOM) createVMSBOM(ctx context.Context) error {
 
 	logger.WithField("host", hostname).Debug("analyze")
 
+	// generate SBOM
 	sbomURL, err := a.SBOMService.GenerateSBOM(ctx, a.SBOMRoot)
 	if err != nil {
 		return fmt.Errorf("genrate sbom: %w", err)
@@ -80,9 +85,12 @@ func (a agentSBOM) createVMSBOM(ctx context.Context) error {
 
 	logger.WithField("host", hostname).WithField("url", sbomURL).Debug("sbom generated")
 
-	err = a.SBOMVMMessagingRepo.Send(a.SBOMVMSubject, &cisinapi.SbomVM{
-		Hostname: hostname,
-		Url:      sbomURL,
+	// publish information about SBOM generation to NATS
+	err = a.SBOMHostMessagingRepo.Send(a.SBOMHostSubject, &cisinapi.Sbom{
+		Host: &cisinapi.Host{
+			Hostname: hostname,
+		},
+		Url: sbomURL,
 	})
 	if err != nil {
 		logger.Error(err)

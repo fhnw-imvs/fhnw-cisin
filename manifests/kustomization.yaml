@@ -1,0 +1,31 @@
+namespace: cisin
+resources:
+  - namespace.yaml
+  - daemonset-cisin-agent.yaml
+  - deployment-cisin-server.yaml
+  - serviceaccount-cisin.yaml
+  - clusterrole-cisin.yaml
+  - clusterrolebinding.yaml
+  - deployment-jaeger.yaml
+  - service-jaeger.yaml
+images:
+  - name: cr.gitlab.fhnw.ch/cloud/mse-cloud/cisin
+    newTag: 224270-amd64
+helmCharts:
+  - name: nats
+    namespace: cisin
+    repo: https://nats-io.github.io/k8s/helm/charts/
+    releaseName: cisin
+  - name: harbor
+    namespace: cisin
+    repo: https://helm.goharbor.io
+    releaseName: cisin
+    version: v1.14.0
+    valuesInline:
+      expose:
+        type: clusterIP
+        tls:
+          enabled: false
+      externalURL: http://harbor.cisin.svc.cluster.local
+      persistence:
+        enabled: false

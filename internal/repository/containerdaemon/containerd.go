@@ -1,3 +1,4 @@
+// Package containerdaemonrepository provides access to container daemons
 package containerdaemonrepository
 
 import (
@@ -16,6 +17,7 @@ type containerdImage struct {
 	client *containerd.Client
 }
 
+// NewContainerd is a Containerd base implementation of ContainerDaemon.
 func NewContainerd(address, namespace string) (ContainerDaemon, error) {
 	client, err := containerd.New(address, containerd.WithDefaultNamespace(namespace))
 	if err != nil {
@@ -28,6 +30,7 @@ func NewContainerd(address, namespace string) (ContainerDaemon, error) {
 }
 
 func (c containerdImage) ListContainerImages(ctx context.Context) ([]Image, error) {
+	// list containers from containerd
 	containers, err := c.client.Containers(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("list images: %w", err)
@@ -35,6 +38,7 @@ func (c containerdImage) ListContainerImages(ctx context.Context) ([]Image, erro
 
 	images := make([]Image, 0)
 
+	// evaluate image for each container
 	for _, container := range containers {
 		task, err := container.Task(ctx, nil)
 		if err != nil {
@@ -69,6 +73,7 @@ func (c containerdImage) ListContainerImages(ctx context.Context) ([]Image, erro
 }
 
 func (c containerdImage) GetDigest(ctx context.Context, ref string) (string, error) {
+	// parse image reference
 	parsedRef, err := name.ParseReference(ref, name.WithDefaultRegistry("docker.io"))
 	if err != nil {
 		return "", fmt.Errorf("parse reference %s, %w", ref, err)
@@ -76,6 +81,7 @@ func (c containerdImage) GetDigest(ctx context.Context, ref string) (string, err
 
 	logrus.WithField("image", parsedRef.Name()).Debug("get digest")
 
+	// get image from containerd
 	img, err := c.client.GetImage(ctx, parsedRef.Name())
 	if err != nil {
 		if parsedRef.Context().Registry.Name() == "index.docker.io" {

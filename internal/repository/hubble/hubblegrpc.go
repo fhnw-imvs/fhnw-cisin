@@ -15,6 +15,7 @@ type hubbleGRPC struct {
 	hubbleConn *grpc.ClientConn
 }
 
+// NewGRPC represents a GRPC based implementation of Hubble.
 func NewGRPC(ctx context.Context, address string, dialOptions []grpc.DialOption) (Hubble, error) {
 	hubbleConn, err := grpc.NewClient(address, dialOptions...)
 	if err != nil {
@@ -50,7 +51,9 @@ func (h hubbleGRPC) StartFlowChannel(ctx context.Context) (chan *Flow, chan erro
 	errChan := make(chan error, 1)
 
 	go func() {
+		// listen for flows
 		for {
+			// receive flow
 			resp, err := h.flowClient.Recv()
 			if err != nil {
 				s, ok := status.FromError(err)
@@ -63,6 +66,7 @@ func (h hubbleGRPC) StartFlowChannel(ctx context.Context) (chan *Flow, chan erro
 				errChan <- err
 			}
 
+			// send flow to channel
 			flowChan <- &Flow{
 				Flow:     resp.GetFlow(),
 				NodeName: resp.GetNodeName(),
@@ -71,6 +75,7 @@ func (h hubbleGRPC) StartFlowChannel(ctx context.Context) (chan *Flow, chan erro
 	}()
 
 	go func() {
+		// stop receiving flows if context is closed
 		<-ctx.Done()
 
 		_ = h.hubbleConn.Close()

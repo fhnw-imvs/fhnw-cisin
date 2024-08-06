@@ -1,3 +1,4 @@
+// Package agentsbomk8s generates SBOMs for Kubernetes workloads and publishes information about generated SBOMs to NATS
 package agentsbomk8s
 
 import (
@@ -13,6 +14,7 @@ import (
 	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service"
 )
 
+// Opts contains options.
 type Opts struct {
 	SBOMSubject            string
 	SBOMMessagingRepo      messagingrepository.Messaging[cisinapi.Sbom, *cisinapi.Sbom]
@@ -25,6 +27,7 @@ type agentSBOM struct {
 	Opts
 }
 
+// NewAgent creates a K8s SBOM agent.
 func NewAgent(opts Opts) (agent.Agent, error) {
 	return agentSBOM{
 		opts,
@@ -39,6 +42,7 @@ func (a agentSBOM) Start(ctx context.Context) error {
 
 func (a agentSBOM) startK8sSBOM(ctx context.Context) {
 	go func() {
+		// generate SBOMs in time intervals
 		ticker := time.NewTicker(a.SBOMGenerationInterval)
 		logger := logrus.WithField("type", "sbom")
 
@@ -61,11 +65,13 @@ func (a agentSBOM) startK8sSBOM(ctx context.Context) {
 func (a agentSBOM) createContainerSBOMs(ctx context.Context) error {
 	logger := logrus.WithField("type", "sbom")
 
+	// list images container daemon
 	images, err := a.ContainerDaemonRepo.ListContainerImages(ctx)
 	if err != nil {
 		return fmt.Errorf("list images: %w", err)
 	}
 
+	// generate SBOMs for all images
 	for _, image := range images {
 		logger.WithField("image", image).Debug("analyze")
 
@@ -76,10 +82,13 @@ func (a agentSBOM) createContainerSBOMs(ctx context.Context) error {
 
 		logger.WithField("image", image).WithField("url", sbomURL).Debug("sbom generated")
 
+		// publish information about SBOM generation to NATS
 		err = a.SBOMMessagingRepo.Send(a.SBOMSubject, &cisinapi.Sbom{
-			Image:  image.Image,
-			Digest: image.Digest,
-			Url:    sbomURL,
+			Image: &cisinapi.Image{
+				Image:  image.Image,
+				Digest: image.Digest,
+			},
+			Url: sbomURL,
 		})
 		if err != nil {
 			logger.Error(err)

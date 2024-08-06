@@ -1,12 +1,17 @@
+// Package safemap provides a generic, thread safe map
 package safemap
 
 import (
 	"golang.org/x/sync/syncmap"
 )
 
+// SafeMap is an interface for a generic, thread safe map.
 type SafeMap[T, U any] interface {
+	// Get returns a value
 	Get(t T) (U, bool)
+	// Set sets a value
 	Set(t T, u U)
+	// Keys lists all available keys
 	Keys() []T
 }
 
@@ -14,6 +19,7 @@ type safeMap[T, U any] struct {
 	safeMap syncmap.Map
 }
 
+// NewSafeMap returns an implementation of SafeMap.
 func NewSafeMap[T, U any]() SafeMap[T, U] {
 	return &safeMap[T, U]{
 		safeMap: syncmap.Map{},
@@ -21,7 +27,6 @@ func NewSafeMap[T, U any]() SafeMap[T, U] {
 }
 
 func (s *safeMap[T, U]) Get(t T) (U, bool) {
-	//nolint:varnamelen
 	var u U
 
 	item, ok := s.safeMap.Load(t)

@@ -1,3 +1,4 @@
+// Package sbom contains the command to scan a trace for vulnerabilities based on embedded SBOM urls.
 package sbom
 
 import (
@@ -9,12 +10,14 @@ import (
 	traceservice "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service/trace"
 )
 
+// SBOM is the command to analyze SBOMs in a trace for vulnerabilities.
 type SBOM struct {
-	Jaeger      string `default:"http://localhost:14268"`
-	ServiceName string `default:"cisin"`
-	TraceID     string `arg:""                           required:""`
+	Jaeger      string `default:"http://jaeger:14268" help:"Jaeger address"`
+	ServiceName string `default:"cisin"               help:"Service name"`
+	TraceID     string `arg:""                        help:"Trace ID to analyze" required:""`
 }
 
+// Run executes the command.
 func (l SBOM) Run() error {
 	apiRepo := apirepository.NewAPI(l.Jaeger)
 

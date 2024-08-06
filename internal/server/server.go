@@ -1,3 +1,4 @@
+// Package server contains the server part of CISIN
 package server
 
 import (
@@ -22,7 +23,9 @@ import (
 	"k8s.io/apimachinery/pkg/api/errors"
 )
 
+// Server is the interface for a server.
 type Server interface {
+	// Start starts the server
 	Start(ctx context.Context) error
 }
 
@@ -33,23 +36,22 @@ type server struct {
 	IDToSBOMURl   safemap.SafeMap[string, string]
 }
 
+// Opts contains options.
 type Opts struct {
 	ConnectionMessagingRepo messagingrepository.Messaging[cisinapi.Connection, *cisinapi.Connection]
 	SBOMMessagingRepo       messagingrepository.Messaging[cisinapi.Sbom, *cisinapi.Sbom]
-	SBOMVMMessagingRepo     messagingrepository.Messaging[cisinapi.SbomVM, *cisinapi.SbomVM]
 	TracingRepo             tracing.Tracing
 	WpSize                  int
 	WpMaxQueueSize          int
 	ConnectionSubject       string
 	SBOMSubject             string
-	SBOMVMSubject           string
 	ConnectionQueue         string
 	SBOMQueue               string
-	SBOMVMQueue             string
 	K8sRepo                 k8srepository.K8s
 	ExcludeWorkloads        []string
 }
 
+// NewServer creates a new Server.
 func NewServer(opts Opts) Server {
 	return server{
 		Opts:          opts,
@@ -72,11 +74,13 @@ type neighbour struct {
 }
 
 func (s server) Start(ctx context.Context) error {
+	// starz SBOM part
 	err := s.startSBOM(ctx)
 	if err != nil {
 		return err
 	}
 
+	// start tracing part
 	err = s.startTracing(ctx)
 	if err != nil {
 		return err
@@ -94,32 +98,32 @@ func (s server) startSBOM(ctx context.Context) error {
 			return fmt.Errorf("create sbom chan:%w", err)
 		}
 
-		sbomVMChan, err := s.SBOMVMMessagingRepo.Receive(ctx, s.SBOMVMSubject, s.SBOMVMQueue)
-		if err != nil {
-			return fmt.Errorf("create sbom chan:%w", err)
-		}
-
+		// receive SBOM messages
 		go func() {
 			for sbom := range sbomChan {
-				s.IDToSBOMURl.Set(sbom.GetDigest(), sbom.GetUrl())
+				// check if SBOM is generated from an image
+				if sbom.GetImage() != nil {
+					// safe SBOM information
+					s.IDToSBOMURl.Set(sbom.GetImage().GetDigest(), sbom.GetUrl())
 
-				logrus.WithFields(logrus.Fields{
-					"type": "sbom",
-					"key":  sbom.GetDigest(),
-					"url":  sbom.GetUrl(),
-				}).Tracef("message received")
-			}
-		}()
+					logrus.WithFields(logrus.Fields{
+						"type": "sbom",
+						"key":  sbom.GetImage().GetDigest(),
+						"url":  sbom.GetUrl(),
+					}).Tracef("message received")
+				}
 
-		go func() {
-			for sbom := range sbomVMChan {
-				s.IDToSBOMURl.Set(sbom.GetHostname(), sbom.GetUrl())
+				// check if SBOM is generated from a host
+				if sbom.GetHost() != nil {
+					// safe SBOM information
+					s.IDToSBOMURl.Set(sbom.GetHost().GetHostname(), sbom.GetUrl())
 
-				logrus.WithFields(logrus.Fields{
-					"type": "sbomvm",
-					"key":  sbom.GetHostname(),
-					"url":  sbom.GetUrl(),
-				}).Tracef("message received")
+					logrus.WithFields(logrus.Fields{
+						"type": "sbomhost",
+						"key":  sbom.GetHost().GetHostname(),
+						"url":  sbom.GetUrl(),
+					}).Tracef("message received")
+				}
 			}
 		}()
 	}
@@ -130,10 +134,12 @@ func (s server) startSBOM(ctx context.Context) error {
 func (s server) startTracing(ctx context.Context) error {
 	logger := logrus.WithField("type", "connection")
 
+	// generate traces in time intervals
 	go func() {
 		s.tracing(ctx)
 	}()
 
+	// receive flow messages in parallel
 	wp := workerpool.New(s.WpSize)
 
 	for range s.WpSize {
@@ -175,11 +181,13 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 			"connection": fmt.Sprintf("%v", connection),
 		}).Trace("message received")
 
+	// receive id for source workload
 	srcID, err := s.translateWorkloadID(ctx, src.GetId())
 	if err != nil {
 		return err
 	}
 
+	// receive id for destination workload
 	destID, err := s.translateWorkloadID(ctx, dest.GetId())
 	if err != nil {
 		return err
@@ -196,6 +204,7 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 		return nil
 	}
 
+	// ignore flow if workload is excluded by config
 	if slices.Contains(s.ExcludeWorkloads, srcID) || slices.Contains(s.ExcludeWorkloads, destID) {
 		logger.WithFields(
 			logrus.Fields{
@@ -206,9 +215,11 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 		return nil
 	}
 
+	// check if there exists already information about the source or the destination
 	existingSrc, _ := s.Participants.Get(srcID)
 	existingDest, _ := s.Participants.Get(destID)
 
+	// set source results
 	s.Participants.Set(srcID, endpoint{
 		id:          srcID,
 		srcResults:  src.GetResults(),
@@ -216,6 +227,7 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 		timestamp:   now,
 	})
 
+	// set destination results
 	s.Participants.Set(destID, endpoint{
 		id:          destID,
 		srcResults:  existingDest.srcResults,
@@ -223,6 +235,7 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 		timestamp:   now,
 	})
 
+	// get neighbourhood of the destination
 	destNeighbourhood, _ := s.Neighbourhood.Get(destID)
 	if slices.ContainsFunc(destNeighbourhood, func(n neighbour) bool {
 		return n.id == srcID
@@ -236,8 +249,10 @@ func (s server) receiveConnectionMessage(ctx context.Context, connection *cisina
 		return nil
 	}
 
+	// get neighbourhood of the source
 	neighbourhood, _ := s.Neighbourhood.Get(srcID)
 
+	// check if destination is already registered as neighbour of the source - otherwise add as neighbour
 	neighbourIndex := slices.IndexFunc(neighbourhood, func(n neighbour) bool {
 		return n.id == destID
 	})
@@ -281,6 +296,7 @@ func (s server) tracing(ctx context.Context) {
 func (s server) buildTraces(ctx context.Context) {
 	keys := s.Neighbourhood.Keys()
 
+	// generate debug map
 	debugMap := make(map[string][]string)
 
 	for _, key := range keys {
@@ -301,10 +317,12 @@ func (s server) buildTraces(ctx context.Context) {
 		logrus.WithField("data", string(data)).Debugf("generate tracing")
 	}
 
-	roots := s.findRoots()
+	// find trace roots
+	roots := s.findTraceRoots()
 
 	logrus.WithField("roots", roots).Trace("found roots")
 
+	// build trace for every root
 	for _, root := range roots {
 		s.buildTrace(ctx, root, nil)
 	}
@@ -314,9 +332,9 @@ func (s server) buildTraces(ctx context.Context) {
 func (s server) buildTrace(ctx context.Context, workloadID string, idsInTrace []string) {
 	var span trace.Span
 
+	// add current id to ids in trace
 	idsInTrace = append(idsInTrace, workloadID)
 
-	//nolint:varnamelen
 	participant, ok := s.Participants.Get(workloadID)
 	if !ok {
 		return
@@ -326,6 +344,7 @@ func (s server) buildTrace(ctx context.Context, workloadID string, idsInTrace []
 
 	sbomIDs := make([]string, 0)
 
+	// add agent module results - evaluated as destination - to trace
 	for moduleName, analyse := range participant.destResults {
 		attributes = append(attributes, attribute.KeyValue{
 			Key:   attribute.Key(moduleName),
@@ -337,6 +356,8 @@ func (s server) buildTrace(ctx context.Context, workloadID string, idsInTrace []
 		}
 	}
 
+	// add agent module results - evaluated as source - to trace -> results from destination are overridden, because
+	// results evaluated as source are more accurate
 	for moduleName, analyse := range participant.srcResults {
 		i := slices.IndexFunc(attributes, func(value attribute.KeyValue) bool {
 			return string(value.Key) == moduleName
@@ -364,21 +385,25 @@ func (s server) buildTrace(ctx context.Context, workloadID string, idsInTrace []
 		sbomIDs = []string{name}
 	}
 
+	// retrieve SBOM URLs
 	sboms := s.getSBOMsFromResults(sbomIDs)
 	attributes = append(attributes, attribute.KeyValue{
 		Key:   constant.SBOMsTraceTag,
 		Value: attribute.StringSliceValue(sboms),
 	})
 
+	// start span
 	ctx, span = s.TracingRepo.GetProvider().Tracer("cisin").Start(ctx, workloadID, trace.WithAttributes(attributes...))
 
 	defer span.End()
 
+	// if workload is not available in neighbourhood as source stop span and return
 	neighbourhood, ok := s.Neighbourhood.Get(workloadID)
 	if !ok {
 		return
 	}
 
+	// if workload is available as source in neighbourhood, analyze every neighbour and add them to the trace
 	for _, n := range neighbourhood {
 		if slices.Contains(idsInTrace, n.id) {
 			continue
@@ -398,6 +423,7 @@ func (s server) translateWorkloadID(ctx context.Context, workloadID string) (str
 		return workloadID, nil
 	}
 
+	// if workload is a pod, get the "base" resource of the pod
 	pod, err := s.K8sRepo.GetPod(ctx, name, namespace)
 	if errors.IsNotFound(err) {
 		// Based on cilium flow tagging it can happen, that an external workload is falsely labeled as pod. We check here if this is the case.
@@ -435,7 +461,7 @@ func (s server) translateWorkloadID(ctx context.Context, workloadID string) (str
 	return fmt.Sprintf("%s/%s/%s", namespace, replicaSet.OwnerReferences[0].Kind, replicaSet.OwnerReferences[0].Name), nil
 }
 
-func (s server) findRoots() []string {
+func (s server) findTraceRoots() []string {
 	roots := make([]string, 0)
 	keys := s.Neighbourhood.Keys()
 

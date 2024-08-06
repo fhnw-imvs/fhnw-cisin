@@ -1,18 +1,18 @@
 package sbomrepository
 
 import (
-	"bytes"
 	"context"
 	"fmt"
 
 	"github.com/anchore/syft/syft"
-	"github.com/anchore/syft/syft/format/cyclonedxjson"
 	"github.com/anchore/syft/syft/source/directorysource"
+	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
 )
 
 type syftFSSBOM struct{}
 
 func (s syftFSSBOM) GetSBOM(path string) ([]byte, error) {
+	// create syft directory source
 	directorySource, err := directorysource.New(directorysource.Config{
 		Path: path,
 		Base: path,
@@ -21,30 +21,20 @@ func (s syftFSSBOM) GetSBOM(path string) ([]byte, error) {
 		return nil, fmt.Errorf("create directory source: %w", err)
 	}
 
+	// generate SBOM
 	sbom, err := syft.CreateSBOM(context.Background(), directorySource, syft.DefaultCreateSBOMConfig())
 	if err != nil {
 		return nil, fmt.Errorf("create sbom: %w", err)
 	}
 
-	buffer := bytes.NewBuffer(nil)
-
-	encoder, err := cyclonedxjson.NewFormatEncoderWithConfig(cyclonedxjson.DefaultEncoderConfig())
-	if err != nil {
-		return nil, fmt.Errorf("create cyclonedxjson format encoder: %w", err)
-	}
-
-	err = encoder.Encode(buffer, *sbom)
-	if err != nil {
-		return nil, fmt.Errorf("encode sbom: %w", err)
-	}
-
-	return buffer.Bytes(), nil
+	return getSpdxJSONBytes(sbom)
 }
 
+// NewSyftFSSBOM is a filesystem based implementation of SBOM.
 func NewSyftFSSBOM() SBOM {
 	return syftFSSBOM{}
 }
 
 func (s syftFSSBOM) GetSBOMURL(_ context.Context, _ string) (string, error) {
-	return "", nil
+	return "", constant.ErrNotFound
 }

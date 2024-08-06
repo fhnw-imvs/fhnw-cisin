@@ -1,3 +1,4 @@
+// Package cmd contains commands base structure
 package cmd
 
 import (
@@ -6,8 +7,9 @@ import (
 	servercmd "gitlab.fhnw.ch/cloud/mse-cloud/cisin/cmd/server"
 )
 
+// CLI contains the base commands for CISIN.
 type CLI struct {
-	Agent   agentcmd.Agent     `cmd:""`
-	Server  servercmd.Server   `cmd:""`
-	Analyze analyzecmd.Analyze `cmd:""`
+	Agent   agentcmd.Agent     `cmd:"" help:"Start CISIN agent"`
+	Server  servercmd.Server   `cmd:"" help:"Start CISIN server"`
+	Analyze analyzecmd.Analyze `cmd:"" help:"Analyse traces "`
 }
