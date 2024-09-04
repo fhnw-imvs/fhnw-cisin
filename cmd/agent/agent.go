@@ -1,9 +1,27 @@
+// Copyright (c) 2024 Esra Siegert
+//
+// Permission is hereby granted, free of charge, to any person obtaining a copy of
+// this software and associated documentation files (the "Software"), to deal in
+// the Software without restriction, including without limitation the rights to
+// use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+// the Software, and to permit persons to whom the Software is furnished to do so,
+// subject to the following conditions:
+//
+// The above copyright notice and this permission notice shall be included in all
+// copies or substantial portions of the Software.
+//
+// THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+// IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+// FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+// COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+// IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+// CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
 // Package agentcmd contains the command to start the agent
 package agentcmd
 
 import (
 	"context"
-	"encoding/json"
 	"fmt"
 	"os"
 	"os/signal"
@@ -46,7 +64,7 @@ type Agent struct {
 	LogLevel          string        `default:"info"                 env:"CISIN_LOG_LEVEL"              help:"Log level to use"                           json:"logLevel"`
 	SrcModules        []string      `default:"k8s_image,k8s_digest" env:"CISIN_SRC_MODULES"            help:"Agent modules for flow sources"             json:"srcModules"`
 	DestModules       []string      `default:"k8s_image,k8s_digest" env:"CISIN_DEST_MODULES"           help:"Agent modules for flow destinations"        json:"destModules"`
-	ImageSrc          string        `default:"containerd"           enum:"docker,containerd,registry"  env:"CISIN_IMAGE_SOURCE"                          help:"Image source"         json:"imageSrc"`
+	ImageSrc          string        `default:"containerd"           enum:"docker,containerd,registry"  env:"CISIN_IMAGE_SOURCE"                          help:"Image source"                     json:"imageSrc"`
 	ImageSrcNamespace string        `default:"k8s.io"               env:"CISIN_IMAGE_SOURCE_NAMESPACE" help:"Namespace for containerd image source"      json:"imageSrcNamespace"`
 	Registry          registry      `embed:""                       envprefix:"CISIN_REGISTRY_"        json:"registry"                                   prefix:"registry-"`
 	SBOM              sbom          `embed:""                       envprefix:"CISIN_SBOM_"            json:"sbom"                                       prefix:"sbom-"`
@@ -150,13 +168,6 @@ func (a Agent) Run() error {
 	if err != nil {
 		return err
 	}
-
-	data, err := json.Marshal(a)
-	if err != nil {
-		return fmt.Errorf("marshal options: %w", err)
-	}
-
-	logrus.WithField("data", data).Info("config")
 
 	// setup agent for network traffic
 	agentCilium, err := agentcilium.NewAgent(agentcilium.Opts{
