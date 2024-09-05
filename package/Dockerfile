@@ -2,7 +2,7 @@ FROM docker.io/library/golang:1.22.5 AS builder
 RUN mkdir /tmp/cisin-src
 COPY . /tmp/cisin-src
 WORKDIR /tmp/cisin-src
-RUN go build -o /tmp/cisin . gitlab.fhnw.ch/cloud/mse-cloud/cisin
+RUN go build -o /tmp/cisin . github.com/fhnw-imvs/fhnw-cisin
 RUN GOPATH=/tmp/go go install github.com/google/go-containerregistry/cmd/crane@latest
 
 FROM docker.io/library/ubuntu:24.04

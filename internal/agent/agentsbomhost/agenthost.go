@@ -26,11 +26,11 @@ import (
 	"os"
 	"time"
 
+	cisinapi "github.com/fhnw-imvs/fhnw-cisin/gen/go/proto"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/agent"
+	messagingrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/messaging"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/service"
 	"github.com/sirupsen/logrus"
-	cisinapi "gitlab.fhnw.ch/cloud/mse-cloud/cisin/gen/go/proto"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/agent"
-	messagingrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/messaging"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service"
 )
 
 // Opts contains options.

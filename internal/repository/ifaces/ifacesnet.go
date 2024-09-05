@@ -24,7 +24,7 @@ import (
 	"net"
 	"strings"
 
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
 )
 
 type ifacesNet struct {

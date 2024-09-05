@@ -21,8 +21,8 @@
 package analyze
 
 import (
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/cmd/analyze/list"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/cmd/analyze/sbom"
+	"github.com/fhnw-imvs/fhnw-cisin/cmd/analyze/list"
+	"github.com/fhnw-imvs/fhnw-cisin/cmd/analyze/sbom"
 )
 
 // Analyze contains the subcommands for the analyze command.

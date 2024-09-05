@@ -24,16 +24,16 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
+	registryrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/registry"
+	sbomrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/sbom"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/service"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
 	"github.com/google/go-containerregistry/pkg/v1/mutate"
 	"github.com/google/go-containerregistry/pkg/v1/static"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/sirupsen/logrus"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
-	registryrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/registry"
-	sbomrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/sbom"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service"
 )
 
 type sbomhostService struct {

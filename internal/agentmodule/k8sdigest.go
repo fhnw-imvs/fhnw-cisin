@@ -25,9 +25,9 @@ import (
 	"fmt"
 
 	"github.com/cilium/cilium/api/v1/flow"
+	cisinapi "github.com/fhnw-imvs/fhnw-cisin/gen/go/proto"
+	k8srepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/k8s"
 	"github.com/google/go-containerregistry/pkg/name"
-	cisinapi "gitlab.fhnw.ch/cloud/mse-cloud/cisin/gen/go/proto"
-	k8srepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/k8s"
 )
 
 // K8sDigestModuleName is the name of the K8s digest module.

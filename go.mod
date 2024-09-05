@@ -1,4 +1,4 @@
-module gitlab.fhnw.ch/cloud/mse-cloud/cisin
+module github.com/fhnw-imvs/fhnw-cisin
 
 go 1.22.0
 

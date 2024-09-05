@@ -21,9 +21,9 @@
 package cmd
 
 import (
-	agentcmd "gitlab.fhnw.ch/cloud/mse-cloud/cisin/cmd/agent"
-	analyzecmd "gitlab.fhnw.ch/cloud/mse-cloud/cisin/cmd/analyze"
-	servercmd "gitlab.fhnw.ch/cloud/mse-cloud/cisin/cmd/server"
+	agentcmd "github.com/fhnw-imvs/fhnw-cisin/cmd/agent"
+	analyzecmd "github.com/fhnw-imvs/fhnw-cisin/cmd/analyze"
+	servercmd "github.com/fhnw-imvs/fhnw-cisin/cmd/server"
 )
 
 // CLI contains the base commands for CISIN.

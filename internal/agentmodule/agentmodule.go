@@ -22,7 +22,7 @@ package agentmodule
 
 import (
 	"github.com/cilium/cilium/api/v1/flow"
-	cisinapi "gitlab.fhnw.ch/cloud/mse-cloud/cisin/gen/go/proto"
+	cisinapi "github.com/fhnw-imvs/fhnw-cisin/gen/go/proto"
 )
 
 // AgentModule is the interface for all agent modules.

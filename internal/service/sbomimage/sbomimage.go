@@ -25,6 +25,11 @@ import (
 	"fmt"
 	"strings"
 
+	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
+	containerdaemonrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/containerdaemon"
+	registryrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/registry"
+	sbomrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/sbom"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/service"
 	"github.com/google/go-containerregistry/pkg/name"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
 	"github.com/google/go-containerregistry/pkg/v1/empty"
@@ -32,11 +37,6 @@ import (
 	"github.com/google/go-containerregistry/pkg/v1/static"
 	"github.com/google/go-containerregistry/pkg/v1/types"
 	"github.com/sirupsen/logrus"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
-	containerdaemonrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/containerdaemon"
-	registryrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/registry"
-	sbomrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/sbom"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service"
 )
 
 const digestSplitLength = 2

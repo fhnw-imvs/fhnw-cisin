@@ -25,7 +25,7 @@ import (
 
 	"github.com/anchore/syft/syft"
 	"github.com/anchore/syft/syft/source/directorysource"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
 )
 
 type syftFSSBOM struct{}

@@ -28,16 +28,16 @@ import (
 
 	"github.com/cilium/cilium/api/v1/flow"
 	"github.com/cilium/cilium/api/v1/observer"
+	cisinapi "github.com/fhnw-imvs/fhnw-cisin/gen/go/proto"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/agent"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/agentmodule"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/id"
+	hubblerepostiory "github.com/fhnw-imvs/fhnw-cisin/internal/repository/hubble"
+	ifacesrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/ifaces"
+	messagingrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/messaging"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/safemap"
 	"github.com/sirupsen/logrus"
-	cisinapi "gitlab.fhnw.ch/cloud/mse-cloud/cisin/gen/go/proto"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/agent"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/agentmodule"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/id"
-	hubblerepostiory "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/hubble"
-	ifacesrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/ifaces"
-	messagingrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/messaging"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/safemap"
 )
 
 // Opts contains options.

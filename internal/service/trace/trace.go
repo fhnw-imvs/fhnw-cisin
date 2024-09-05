@@ -24,8 +24,8 @@ import (
 	"encoding/json"
 	"fmt"
 
-	apirepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/api"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service"
+	apirepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/api"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/service"
 )
 
 type traceService struct {

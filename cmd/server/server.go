@@ -26,12 +26,12 @@ import (
 	"os"
 	"os/signal"
 
+	cisinapi "github.com/fhnw-imvs/fhnw-cisin/gen/go/proto"
+	k8srepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/k8s"
+	messagingrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/messaging"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/repository/tracing"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/server"
 	"github.com/sirupsen/logrus"
-	cisinapi "gitlab.fhnw.ch/cloud/mse-cloud/cisin/gen/go/proto"
-	k8srepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/k8s"
-	messagingrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/messaging"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/tracing"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/server"
 )
 
 // Server is the command to start the CISIN server.

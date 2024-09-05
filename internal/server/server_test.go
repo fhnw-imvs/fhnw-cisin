@@ -24,7 +24,7 @@ import (
 	"sort"
 	"testing"
 
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/safemap"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/safemap"
 )
 
 func Test_server_findRoots(t *testing.T) {

@@ -1,5 +1,5 @@
 syntax = "proto3";
-option go_package = "gitlab.fhnw.ch/cloud/mse-cloud/cisin/cisinapi";
+option go_package = "github.com/fhnw-imvs/fhnw-cisin/cisinapi";
 
 enum WorkloadType {
   KUBERNETES = 0;

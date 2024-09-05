@@ -24,7 +24,7 @@ import (
 	"io"
 	"net/http"
 
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
 )
 
 type apiHTTP struct {

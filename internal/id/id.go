@@ -25,8 +25,8 @@ import (
 	"strings"
 
 	"github.com/cilium/cilium/api/v1/flow"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
 	"github.com/sirupsen/logrus"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
 )
 
 const numberOfIDElements = 3

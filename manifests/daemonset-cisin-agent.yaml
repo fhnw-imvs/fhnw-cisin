@@ -20,7 +20,7 @@ spec:
       serviceAccountName: cisin
       containers:
         - name: cisin-agent
-          image: cr.gitlab.fhnw.ch/cloud/mse-cloud/cisin:latest
+          image: ghcr.io/fhnw-imvs/fhnw-cisin/cisin:latest
           imagePullPolicy: IfNotPresent
           command:
             - /opt/cisin

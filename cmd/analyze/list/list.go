@@ -23,8 +23,8 @@ package list
 import (
 	"fmt"
 
-	apirepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/api"
-	traceservice "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service/trace"
+	apirepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/api"
+	traceservice "github.com/fhnw-imvs/fhnw-cisin/internal/service/trace"
 )
 
 // List is the command to list trace ids from Jaeger.

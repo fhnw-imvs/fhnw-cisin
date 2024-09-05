@@ -9,7 +9,7 @@ resources:
   - deployment-jaeger.yaml
   - service-jaeger.yaml
 images:
-  - name: cr.gitlab.fhnw.ch/cloud/mse-cloud/cisin
+  - name: ghcr.io/fhnw-imvs/fhnw-cisin/cisin
     newTag: 224270-amd64
 helmCharts:
   - name: nats

@@ -24,7 +24,7 @@ package main
 
 import (
 	"github.com/alecthomas/kong"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/cmd"
+	"github.com/fhnw-imvs/fhnw-cisin/cmd"
 )
 
 //go:generate go run github.com/bufbuild/buf/cmd/buf generate

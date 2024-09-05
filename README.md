@@ -81,7 +81,7 @@ docker run --network host \
 -e CISIN_NATS_ADDRESS=<NATS address> \
 -e CISIN_CLUSTER_NAME=<Kubernetes cluster name> \
 -e CISIN_NODE_TYPE=host \
-cr.gitlab.fhnw.ch/cloud/mse-cloud/cisin:<tag>  agent 
+ghcr.io/fhnw-imvs/fhnw-cisin/cisin:<tag>  agent 
 ```
 
 ### Options
@@ -210,11 +210,11 @@ tool `godoc`.
 go install golang.org/x/tools/cmd/godoc@latest
 godoc -http localhost:8080
 # Linux
-xdg-open http://localhost:8080/pkg/gitlab.fhnw.ch/cloud/mse-cloud/cisin/
+xdg-open http://localhost:8080/pkg/github.com/fhnw-imvs/fhnw-cisin/
 # Mac
-open http://localhost:8080/pkg/gitlab.fhnw.ch/cloud/mse-cloud/cisin/
+open http://localhost:8080/pkg/github.com/fhnw-imvs/fhnw-cisin/
 # Windows
-start http://localhost:8080/pkg/gitlab.fhnw.ch/cloud/mse-cloud/cisin/
+start http://localhost:8080/pkg/github.com/fhnw-imvs/fhnw-cisin/
 ```
 
 ### [cmd](./cmd)
@@ -272,7 +272,7 @@ digest. Because of the interface it is easily possible to add new agent modules.
 To build CISIN run the following command:
 
 ```shell
-go build -o cisin ./ gitlab.fhnw.ch/cloud/mse-cloud/cisin
+go build -o cisin ./ github.com/fhnw-imvs/fhnw-cisin
 ```
 
 ### Protobuf

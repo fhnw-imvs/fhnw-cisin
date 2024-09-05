@@ -26,10 +26,10 @@ import (
 	"os"
 	"os/exec"
 
+	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
+	registryrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/registry"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/service"
 	v1 "github.com/google/go-containerregistry/pkg/v1"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/constant"
-	registryrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/registry"
-	"gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service"
 )
 
 type secScanService struct {

@@ -23,10 +23,10 @@ package sbom
 import (
 	"fmt"
 
-	apirepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/api"
-	registryrepository "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/repository/registry"
-	secscanservice "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service/secscan"
-	traceservice "gitlab.fhnw.ch/cloud/mse-cloud/cisin/internal/service/trace"
+	apirepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/api"
+	registryrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/registry"
+	secscanservice "github.com/fhnw-imvs/fhnw-cisin/internal/service/secscan"
+	traceservice "github.com/fhnw-imvs/fhnw-cisin/internal/service/trace"
 )
 
 // SBOM is the command to analyze SBOMs in a trace for vulnerabilities.
