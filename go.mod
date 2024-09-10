@@ -7,7 +7,7 @@ require (
 	github.com/anchore/stereoscope v0.0.3-0.20240705165118-e46739e21796
 	github.com/anchore/syft v1.9.0
 	github.com/bufbuild/buf v1.30.1
-	github.com/cilium/cilium v1.15.7
+	github.com/cilium/cilium v1.15.8
 	github.com/containerd/containerd v1.7.19
 	github.com/gammazero/workerpool v1.1.3
 	github.com/google/go-containerregistry v0.20.0
@@ -137,7 +137,7 @@ require (
 	github.com/distribution/reference v0.6.0 // indirect
 	github.com/docker/cli v27.0.3+incompatible // indirect
 	github.com/docker/distribution v2.8.3+incompatible // indirect
-	github.com/docker/docker v27.0.3+incompatible // indirect
+	github.com/docker/docker v27.1.1+incompatible // indirect
 	github.com/docker/docker-credential-helpers v0.8.2 // indirect
 	github.com/docker/go-connections v0.5.0 // indirect
 	github.com/docker/go-events v0.0.0-20190806004212-e31b211e4f1c // indirect
@@ -333,7 +333,6 @@ require (
 	go.opencensus.io v0.24.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/net/http/otelhttp v0.53.0 // indirect
 	go.opentelemetry.io/otel/exporters/otlp/otlptrace v1.28.0 // indirect
-	go.opentelemetry.io/otel/exporters/otlp/otlptrace/otlptracehttp v1.26.0 // indirect
 	go.opentelemetry.io/otel/metric v1.28.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.25.0 // indirect
 	go.opentelemetry.io/proto/otlp v1.3.1 // indirect
