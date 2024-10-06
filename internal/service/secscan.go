@@ -21,6 +21,30 @@ package service
 
 // SecScanService provides security scan related services.
 type SecScanService interface {
-	// Scan SBOMs for vulnerabilities
-	Scan(sbomURLs []string) error
+	// ScanStdout SBOMs for vulnerabilities
+	ScanStdout(sbomURLs []string) error
+	Scan(sbomPath string) (*SecScanResult, error)
+}
+
+type SecScanResult struct {
+	Matches []SecScanMatch `json:"matches"`
+}
+
+type SecScanMatch struct {
+	Vulnerability SecScanVulnerability `json:"vulnerability"`
+}
+
+type SecScanVulnerability struct {
+	ID                     string                 `json:"id"`
+	Severity               string                 `json:"severity"`
+	RelatedVulnerabilities []SecScanVulnerability `json:"relatedVulnerabilities"`
+	CVSs                   []SecScanCVS           `json:"cvss,omitempty"`
+}
+
+type SecScanCVS struct {
+	Metrics SecScanCVSMetrics `json:"metrics"`
+}
+
+type SecScanCVSMetrics struct {
+	BaseScore float64 `json:"baseScore"`
 }

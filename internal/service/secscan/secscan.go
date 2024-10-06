@@ -21,6 +21,7 @@
 package secscanservice
 
 import (
+	"encoding/json"
 	"fmt"
 	"io"
 	"os"
@@ -43,7 +44,7 @@ func New(registryRepo registryrepository.Registry) service.SecScanService {
 	}
 }
 
-func (s secScanService) Scan(sbomURLs []string) error {
+func (s secScanService) ScanStdout(sbomURLs []string) error {
 	// update vulnerability datatbase
 	_, err := exec.Command("grype", "db", "update").CombinedOutput()
 	if err != nil {
@@ -71,6 +72,23 @@ func (s secScanService) Scan(sbomURLs []string) error {
 	}
 
 	return nil
+}
+
+func (s secScanService) Scan(sbomPath string) (*service.SecScanResult, error) {
+	//#nosec:G204
+	output, err := exec.Command("grype", "-o", "json", fmt.Sprintf("sbom:%s", sbomPath)).CombinedOutput()
+	if err != nil {
+		return nil, fmt.Errorf("failed to run grype: %w", err)
+	}
+
+	vulnerabilities := service.SecScanResult{}
+
+	err = json.Unmarshal(output, &vulnerabilities)
+	if err != nil {
+		return nil, fmt.Errorf("failed to unmarshal json: %w", err)
+	}
+
+	return &vulnerabilities, nil
 }
 
 func printVulnerabilities(layer v1.Layer) error {

@@ -21,8 +21,51 @@ package service
 
 // TraceService provides traces related services.
 type TraceService interface {
-	// List lists trace ids
-	List() ([]string, error)
+	// ListIDs lists trace ids
+	ListIDs() ([]string, error)
+	List() (*Trace, error)
 	// ListSBOMs lists SBOMs from a trace
 	ListSBOMs(traceID string) ([]string, error)
+}
+
+type Trace struct {
+	Data []TraceData `json:"data"`
+}
+
+type TraceData struct {
+	TraceID   string         `json:"traceID"`
+	Spans     []TraceSpan    `json:"spans"`
+	Processes TraceProcesses `json:"processes"`
+}
+
+type TraceSpan struct {
+	TraceID       string               `json:"traceID"`
+	SpanID        string               `json:"spanID"`
+	OperationName string               `json:"operationName"`
+	References    []TraceSpanReference `json:"references"`
+	StartTime     int64                `json:"startTime"`
+	Duration      int                  `json:"duration"`
+	Tags          []TraceTag           `json:"tags"`
+	ProcessID     string               `json:"processID"`
+}
+
+type TraceProcesses struct {
+	P1 TraceProcess `json:"p1"`
+}
+
+type TraceProcess struct {
+	ServiceName string     `json:"serviceName"`
+	Tags        []TraceTag `json:"tags"`
+}
+
+type TraceTag struct {
+	Key   string `json:"key"`
+	Type  string `json:"type"`
+	Value string `json:"value"`
+}
+
+type TraceSpanReference struct {
+	RefType string `json:"refType"`
+	TraceID string `json:"traceID"`
+	SpanID  string `json:"spanID"`
 }

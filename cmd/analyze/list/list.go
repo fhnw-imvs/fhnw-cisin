@@ -22,6 +22,7 @@ package list
 
 import (
 	"fmt"
+	"time"
 
 	apirepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/api"
 	traceservice "github.com/fhnw-imvs/fhnw-cisin/internal/service/trace"
@@ -29,17 +30,18 @@ import (
 
 // List is the command to list trace ids from Jaeger.
 type List struct {
-	Jaeger      string `default:"http://localhost:14268" help:"Jaeger address"`
-	ServiceName string `default:"cisin"                  help:"Service name"`
+	Jaeger       string        `default:"http://localhost:14268" help:"Jaeger address"`
+	ServiceName  string        `default:"cisin"                  help:"Service name"`
+	HistoryLimit time.Duration `default:"1h"                     help:"History limit"`
 }
 
 // Run executes the command.
 func (l List) Run() error {
 	apiRepo := apirepository.NewAPI(l.Jaeger)
 
-	traceService := traceservice.New(apiRepo, l.ServiceName)
+	traceService := traceservice.New(apiRepo, l.ServiceName, l.HistoryLimit)
 
-	traceIDs, err := traceService.List()
+	traceIDs, err := traceService.ListIDs()
 	if err != nil {
 		return fmt.Errorf("listing traces: %w", err)
 	}

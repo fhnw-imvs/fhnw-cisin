@@ -17,20 +17,10 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-// Package cmd contains commands base structure
-package cmd
+package service
 
-import (
-	agentcmd "github.com/fhnw-imvs/fhnw-cisin/cmd/agent"
-	analyzecmd "github.com/fhnw-imvs/fhnw-cisin/cmd/analyze"
-	metricscmd "github.com/fhnw-imvs/fhnw-cisin/cmd/metrics"
-	servercmd "github.com/fhnw-imvs/fhnw-cisin/cmd/server"
-)
+import "context"
 
-// CLI contains the base commands for CISIN.
-type CLI struct {
-	Agent   agentcmd.Agent     `cmd:"" help:"Start CISIN agent"`
-	Server  servercmd.Server   `cmd:"" help:"Start CISIN server"`
-	Analyze analyzecmd.Analyze `cmd:"" help:"Analyse traces "`
-	Metrics metricscmd.Metrics `cmd:"" help:"Start CISIN metrics"`
+type MetricsService interface {
+	Start(ctx context.Context) error
 }

@@ -23,78 +23,31 @@ package traceservice
 import (
 	"encoding/json"
 	"fmt"
+	"time"
 
 	apirepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/api"
 	"github.com/fhnw-imvs/fhnw-cisin/internal/service"
 )
 
 type traceService struct {
-	apiRepo     apirepository.API
-	serviceName string
-}
-
-type trace struct {
-	Data []traceData `json:"data"`
-}
-
-type traceData struct {
-	TraceID   string         `json:"traceID"`
-	Spans     []traceSpan    `json:"spans"`
-	Processes traceProcesses `json:"processes"`
-}
-
-type traceSpan struct {
-	TraceID       string               `json:"traceID"`
-	SpanID        string               `json:"spanID"`
-	OperationName string               `json:"operationName"`
-	References    []traceSpanReference `json:"references"`
-	StartTime     int64                `json:"startTime"`
-	Duration      int                  `json:"duration"`
-	Tags          []traceTag           `json:"tags"`
-	ProcessID     string               `json:"processID"`
-}
-
-type traceProcesses struct {
-	P1 traceProcess `json:"p1"`
-}
-
-type traceProcess struct {
-	ServiceName string     `json:"serviceName"`
-	Tags        []traceTag `json:"tags"`
-}
-
-type traceTag struct {
-	Key   string `json:"key"`
-	Type  string `json:"type"`
-	Value string `json:"value"`
-}
-
-type traceSpanReference struct {
-	RefType string `json:"refType"`
-	TraceID string `json:"traceID"`
-	SpanID  string `json:"spanID"`
+	apiRepo      apirepository.API
+	serviceName  string
+	historyLimit time.Duration
 }
 
 // New creates a new service.TraceService.
-func New(apiRepo apirepository.API, serviceName string) service.TraceService {
+func New(apiRepo apirepository.API, serviceName string, historyLimit time.Duration) service.TraceService {
 	return traceService{
-		apiRepo:     apiRepo,
-		serviceName: serviceName,
+		apiRepo:      apiRepo,
+		serviceName:  serviceName,
+		historyLimit: historyLimit,
 	}
 }
 
-func (t traceService) List() ([]string, error) {
-	// get traces from API
-	data, err := t.apiRepo.Get(fmt.Sprintf("/api/traces?service=%s", t.serviceName))
+func (t traceService) ListIDs() ([]string, error) {
+	receivedTrace, err := t.List()
 	if err != nil {
-		return nil, fmt.Errorf("could not get traces: %w", err)
-	}
-
-	receivedTrace := trace{}
-
-	err = json.Unmarshal(data, &receivedTrace)
-	if err != nil {
-		return nil, fmt.Errorf("could not unmarshal traces: %w", err)
+		return nil, err
 	}
 
 	// extract trace ids
@@ -106,6 +59,23 @@ func (t traceService) List() ([]string, error) {
 	return traceIDs, nil
 }
 
+func (t traceService) List() (*service.Trace, error) {
+	// get traces from API
+	data, err := t.apiRepo.Get(fmt.Sprintf("/api/traces?service=%s&start_time_max=%s", t.serviceName, time.Now().Add(-t.historyLimit).Format(time.RFC3339Nano)))
+	if err != nil {
+		return nil, fmt.Errorf("could not get traces: %w", err)
+	}
+
+	receivedTrace := service.Trace{}
+
+	err = json.Unmarshal(data, &receivedTrace)
+	if err != nil {
+		return nil, fmt.Errorf("could not unmarshal traces: %w", err)
+	}
+
+	return &receivedTrace, nil
+}
+
 func (t traceService) ListSBOMs(traceID string) ([]string, error) {
 	// request trace from API
 	data, err := t.apiRepo.Get(fmt.Sprintf("/api/traces/%s", traceID))
@@ -113,7 +83,7 @@ func (t traceService) ListSBOMs(traceID string) ([]string, error) {
 		return nil, fmt.Errorf("could not get traces: %w", err)
 	}
 
-	receivedTrace := trace{}
+	receivedTrace := service.Trace{}
 
 	err = json.Unmarshal(data, &receivedTrace)
 	if err != nil {

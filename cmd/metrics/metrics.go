@@ -17,44 +17,54 @@
 // IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
 // CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
-// Package sbom contains the command to scan a trace for vulnerabilities based on embedded SBOM urls.
-package sbom
+package metrics
 
 import (
+	"context"
 	"fmt"
+	"os"
+	"os/signal"
+	"time"
 
 	apirepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/api"
 	registryrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/registry"
+	metricsservice "github.com/fhnw-imvs/fhnw-cisin/internal/service/metrics"
 	secscanservice "github.com/fhnw-imvs/fhnw-cisin/internal/service/secscan"
 	traceservice "github.com/fhnw-imvs/fhnw-cisin/internal/service/trace"
 )
 
-// SBOM is the command to analyze SBOMs in a trace for vulnerabilities.
-type SBOM struct {
-	Jaeger      string `default:"http://jaeger:14268" help:"Jaeger address"`
-	ServiceName string `default:"cisin"               help:"Service name"`
-	TraceID     string `arg:""                        help:"Trace ID to analyze" required:""`
+type Metrics struct {
+	Jaeger         string        `default:"http://localhost:14268" help:"Jaeger address"`
+	ServiceName    string        `default:"cisin"                  help:"Service name"`
+	Address        string        `default:":2112"                  help:"Metrics address"`
+	UpdateInterval time.Duration `default:"1h"                     help:"Update interval"`
 }
 
 // Run executes the command.
-func (l SBOM) Run() error {
+func (l Metrics) Run() error {
 	apiRepo := apirepository.NewAPI(l.Jaeger)
 
 	traceService := traceservice.New(apiRepo, l.ServiceName, 0)
-
-	sbomURLS, err := traceService.ListSBOMs(l.TraceID)
-	if err != nil {
-		return fmt.Errorf("list sboms: %w", err)
-	}
 
 	registryRepo := registryrepository.NewContainerRegistry("", "", "", true)
 
 	secScanService := secscanservice.New(registryRepo)
 
-	err = secScanService.ScanStdout(sbomURLS)
+	metricsService := metricsservice.NewMetricsService(l.Address, l.UpdateInterval, traceService, secScanService, registryRepo)
+
+	signals := make(chan os.Signal, 1)
+
+	signal.Notify(signals, os.Interrupt)
+
+	ctx, cancel := context.WithCancel(context.Background())
+	defer cancel()
+
+	err := metricsService.Start(ctx)
 	if err != nil {
-		return fmt.Errorf("scan: %w", err)
+		return fmt.Errorf("start metrics service: %w", err)
 	}
+
+	<-signals
 
 	return nil
 }
