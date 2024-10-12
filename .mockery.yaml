@@ -1,0 +1,16 @@
+with-expecter: true
+packages:
+    github.com/fhnw-imvs/fhnw-cisin/internal/repository:
+        config:
+            exclude:
+                - messaging
+            outpkg: repomocks
+            dir: gen/mocks/repo
+            recursive: true
+            all: true
+    github.com/fhnw-imvs/fhnw-cisin/internal/service:
+        config:
+            outpkg: servicemocks
+            dir: gen/mocks/service
+            recursive: true
+            all: true

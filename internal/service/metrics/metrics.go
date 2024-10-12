@@ -23,6 +23,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/id"
 	"io"
 	"net/http"
 	"os"
@@ -68,6 +69,9 @@ func NewMetricsService(address string, updateInterval time.Duration, traceServic
 			Name: "cisin_workload_cve",
 			Help: "Describes a CVE present in the cluster",
 		}, []string{
+			"namespace",
+			"kind",
+			"name",
 			"workload_id",
 			"severity",
 			"cve",
@@ -138,7 +142,12 @@ func (m *metricsService) updateMetrics() error {
 			currentWorkloadIDs[workloadID] = true
 
 			for _, v := range tr.vulnerabilities {
-				m.metrics.WithLabelValues(workloadID, v.severity, v.id).Set(1)
+				namesapce, kind, name, err := id.ParseID(workloadID)
+				if err != nil {
+					continue
+				}
+
+				m.metrics.WithLabelValues(namesapce, kind, name, workloadID, v.severity, v.id).Set(1)
 			}
 		}
 	}
