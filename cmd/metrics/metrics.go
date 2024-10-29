@@ -34,10 +34,10 @@ import (
 )
 
 type Metrics struct {
-	Jaeger         string        `default:"http://localhost:14268" help:"Jaeger address"`
-	ServiceName    string        `default:"cisin"                  help:"Service name"`
-	Address        string        `default:":2112"                  help:"Metrics address"`
-	UpdateInterval time.Duration `default:"1h"                     help:"Update interval"`
+	Jaeger         string        `default:"http://localhost:14268" env:"CISIN_JAEGER"              help:"Jaeger address"`
+	ServiceName    string        `default:"cisin"                  env:"CISIN_JAEGER_SERVICE_NAME" help:"Service name"`
+	Address        string        `default:":2112"                  env:"CISIN_ADDRESS"             help:"Metrics address"`
+	UpdateInterval time.Duration `default:"1h"                     env:"CISIN_UPDATE_INTERVAL"     help:"Update interval"`
 }
 
 // Run executes the command.

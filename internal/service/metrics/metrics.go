@@ -23,7 +23,6 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/fhnw-imvs/fhnw-cisin/internal/id"
 	"io"
 	"net/http"
 	"os"
@@ -31,6 +30,7 @@ import (
 	"time"
 
 	"github.com/fhnw-imvs/fhnw-cisin/internal/constant"
+	"github.com/fhnw-imvs/fhnw-cisin/internal/id"
 	registryrepository "github.com/fhnw-imvs/fhnw-cisin/internal/repository/registry"
 	"github.com/fhnw-imvs/fhnw-cisin/internal/service"
 	"github.com/prometheus/client_golang/prometheus"
@@ -174,10 +174,7 @@ func (m *metricsService) getTraceResult(trace *service.Trace) (map[string]*trace
 					return nil, fmt.Errorf("unmarshal sbom tag: %w", err)
 				}
 
-				err = m.setTraceResults(span.OperationName, sbomURLToTraceResult, sbomURLs)
-				if err != nil {
-					return nil, fmt.Errorf("set trace results: %w", err)
-				}
+				m.setTraceResults(span.OperationName, sbomURLToTraceResult, sbomURLs)
 			}
 		}
 	}
@@ -185,7 +182,7 @@ func (m *metricsService) getTraceResult(trace *service.Trace) (map[string]*trace
 	return sbomURLToTraceResult, nil
 }
 
-func (m *metricsService) setTraceResults(workloadID string, traceResults map[string]*traceResult, sbomURLs []string) error {
+func (m *metricsService) setTraceResults(workloadID string, traceResults map[string]*traceResult, sbomURLs []string) {
 	for _, sbomURL := range sbomURLs {
 		if traceResults[sbomURL] == nil {
 			traceResults[sbomURL] = &traceResult{}
@@ -197,15 +194,23 @@ func (m *metricsService) setTraceResults(workloadID string, traceResults map[str
 			continue
 		}
 
+		if sbomURL == "" {
+			continue
+		}
+
 		sbomPaths, err := m.getSBOMs(sbomURL)
 		if err != nil {
-			return fmt.Errorf("get SBOMs: %w", err)
+			logrus.Errorf("get SBOMs: %v", err)
+
+			continue
 		}
 
 		for _, sbomPath := range sbomPaths {
 			result, err := m.secScanService.Scan(sbomPath)
 			if err != nil {
-				return fmt.Errorf("sec scan %w", err)
+				logrus.Errorf("sec scan %v", err)
+
+				continue
 			}
 
 			defer os.Remove(sbomPath)
@@ -218,8 +223,6 @@ func (m *metricsService) setTraceResults(workloadID string, traceResults map[str
 			}
 		}
 	}
-
-	return nil
 }
 
 func (m *metricsService) updateWorkloadIDs(currentWorkloadIDs map[string]bool) {
